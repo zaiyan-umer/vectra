@@ -1,0 +1,71 @@
+package proxy
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+
+	"github.com/zaiyan-umer/vectra/app/internal/backend"
+)
+
+// Any type that has a Select() method satisfies BackendSelector interface.
+// So each algorithm must implement Select() so it's Select() method can be used here
+type BackendSelector interface {
+	Select() int
+}
+
+type Proxy struct {
+	selector BackendSelector
+	proxies  []*httputil.ReverseProxy
+}
+
+func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	index := p.selector.Select()
+
+	if index < 0 || index >= len(p.proxies) {
+		log.Printf("invalid backend index: %d", index)
+		http.Error(w, "no backend is available", http.StatusServiceUnavailable)
+		return
+	}
+
+	// we need to verify that the backend is healthy
+	p.proxies[index].ServeHTTP(w, r)
+}
+
+func NewProxy(selector BackendSelector, targetBackends []backend.Backend) (*Proxy, error) {
+	if selector == nil {
+		return nil, fmt.Errorf("backend selector must not be nil")
+	}
+
+	backends := make([]*httputil.ReverseProxy, 0, len(targetBackends))
+
+	for _, rawTarget := range targetBackends {
+		target, err := parseBackendURL(rawTarget.URL)
+		if err != nil {
+			return nil, err
+		}
+
+		backends = append(backends, httputil.NewSingleHostReverseProxy(target))
+	}
+
+	return &Proxy{selector: selector, proxies: backends}, nil
+}
+
+func parseBackendURL(raw string) (*url.URL, error) {
+	target, err := url.Parse(raw)
+	if err != nil {
+		return nil, fmt.Errorf("parse backend URL %q: %w", raw, err)
+	}
+
+	if target.Scheme != "http" && target.Scheme != "https" {
+		return nil, fmt.Errorf("backend URL %q must use http or https", raw)
+	}
+
+	if target.Host == "" {
+		return nil, fmt.Errorf("backend URL %q must include a host", raw)
+	}
+
+	return target, nil
+}

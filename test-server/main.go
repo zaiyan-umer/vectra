@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var serverName string
+
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", serverInfo)
@@ -21,12 +23,17 @@ func main() {
 		addr = ":8081"
 	}
 
+	serverName = os.Getenv("SERVER_NAME")
+	if serverName == "" {
+		serverName = addr
+	}
+
 	httpServer := &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
-	log.Printf("server is listening on %s", httpServer.Addr)
+	log.Printf("server %s is listening on %s", serverName, httpServer.Addr)
 
 	err := httpServer.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -36,7 +43,7 @@ func main() {
 
 func serverInfo(w http.ResponseWriter, r *http.Request) {
 	writeText(w, http.StatusOK, "Test backend")
-	logRequest(r)
+	logRequest(serverName, r)
 }
 
 func delayedResponse(w http.ResponseWriter, r *http.Request) {
@@ -46,31 +53,32 @@ func delayedResponse(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(delay)
 
 	writeText(w, http.StatusOK, "Delayed response")
-	logRequest(r)
+	logRequest(serverName, r)
 }
 
 func backendError(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "simulated backend failure", http.StatusInternalServerError)
-	logRequest(r)
-	log.Printf("simulated backend failure")
+	http.Error(w, "simulated backend failure on "+serverName, http.StatusInternalServerError)
+	logRequest(serverName, r)
+	log.Printf("server=%s simulated backend failure", serverName)
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
 	writeText(w, http.StatusOK, "Server is healthy.")
-	logRequest(r)
+	logRequest(serverName, r)
 }
 
 func writeText(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(status)
-	if _, err := fmt.Fprintln(w, message); err != nil {
+	if _, err := fmt.Fprintf(w, "server=%s %s\n", serverName, message); err != nil {
 		log.Printf("error while writing response: %v", err)
 	}
 }
 
-func logRequest(r *http.Request) {
+func logRequest(serverName string, r *http.Request) {
 	log.Printf(
-		"REQ method=%s path=%s remote=%s user_agent=%q",
+		"REQ server=%s method=%s path=%s remote=%s user_agent=%q",
+		serverName,
 		r.Method,
 		r.URL.Path,
 		r.RemoteAddr,
