@@ -17,6 +17,13 @@ func New(algorithm string, targetBackends []*backend.Backend) (http.Handler, err
 		}
 
 		return proxy.NewProxy(roundRobin, targetBackends)
+		
+	case config.AlgorithmHealthyRoundRobin:
+		HealthyRoundRobin := &HealthyRoundRobin{
+			backends: targetBackends,
+		}
+
+		return proxy.NewProxy(HealthyRoundRobin, targetBackends)
 	// case config.AlgorithmLeastConnections:
 	//     return NewLeastConnectionsProxy(targetBackends)
 	default:

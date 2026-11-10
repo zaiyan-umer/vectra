@@ -67,3 +67,15 @@ func Run(ctx context.Context, backends []*backend.Backend, interval time.Duratio
 		}
 	}
 }
+
+func GetHealthyBackendIndices(backends []*backend.Backend) []int {
+	indices := make([]int, 0, len(backends))
+
+	for index, target := range backends {
+		if target.IsHealthy() {
+			indices = append(indices, index)
+		}
+	}
+
+	return indices
+}
