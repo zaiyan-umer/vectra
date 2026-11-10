@@ -13,9 +13,11 @@ import (
 
 type fixedSelector int
 
-func (s fixedSelector) Select() int {
+func (s fixedSelector) Acquire() int {
 	return int(s)
 }
+
+func (s fixedSelector) Release(){}
 
 func TestNewProxyRejectsInvalidBackendURL(t *testing.T) {
 	_, err := NewProxy(fixedSelector(0), []*backend.Backend{{URL: "ftp://backend"}})

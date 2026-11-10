@@ -10,7 +10,7 @@ type RoundRobin struct {
 	next     atomic.Uint64
 }
 
-func (r *RoundRobin) Select() int {
+func (r *RoundRobin) Acquire() int {
 	backendLength := len(r.backends)
 
 	if backendLength == 0 {
@@ -20,3 +20,5 @@ func (r *RoundRobin) Select() int {
 	index := (r.next.Add(1) - 1) % uint64(backendLength)
 	return int(index)
 }
+
+func (r *RoundRobin) Release() {}

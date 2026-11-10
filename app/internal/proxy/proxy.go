@@ -15,7 +15,8 @@ import (
 // Any type that has a Select() method satisfies BackendSelector interface.
 // So each algorithm must implement Select() so it's Select() method can be used here
 type BackendSelector interface {
-	Select() int
+	Acquire() int
+	Release()
 }
 
 type Proxy struct {
@@ -24,7 +25,9 @@ type Proxy struct {
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	index := p.selector.Select()
+	// index := p.selector.Select()
+	index := p.selector.Acquire()
+	defer p.selector.Release()
 
 	if index < 0 || index >= len(p.proxies) {
 		log.Printf("invalid backend index: %d", index)
