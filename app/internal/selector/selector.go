@@ -9,18 +9,16 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/proxy"
 )
 
-func New(algorithm string, targetURLs []string) (http.Handler, error) {
+func New(algorithm string, targetBackends []*backend.Backend) (http.Handler, error) {
 	switch algorithm {
 	case config.AlgorithmRoundRobin:
-		targetBackends := backend.Targets(targetURLs)
-
 		roundRobin := &RoundRobin{
 			backends: targetBackends,
 		}
 
 		return proxy.NewProxy(roundRobin, targetBackends)
 	// case config.AlgorithmLeastConnections:
-	//     return NewLeastConnectionsProxy(targetURLs)
+	//     return NewLeastConnectionsProxy(targetBackends)
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %q", algorithm)
 	}

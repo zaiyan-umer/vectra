@@ -1,19 +1,29 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
 
+	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
+	"github.com/zaiyan-umer/vectra/app/internal/health"
 	"github.com/zaiyan-umer/vectra/app/internal/selector"
 )
 
 func main() {
-	proxy, err := selector.New(config.Default.Algorithm, config.Default.TargetURLs)
+	targetBackends := backend.Targets(config.TargetURLs)
+
+	proxy, err := selector.New(config.Default.Algorithm, targetBackends)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go health.Run(ctx, targetBackends, config.HealthCheckInterval)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", proxy)

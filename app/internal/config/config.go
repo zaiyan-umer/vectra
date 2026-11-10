@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 // the target backend server urls
 var TargetURLs = []string{
 	"http://localhost:8081",
@@ -14,3 +16,5 @@ var Default = Config{
 	Algorithm:  Algorithm,
 	TargetURLs: TargetURLs,
 }
+
+const HealthCheckInterval time.Duration = 2 * time.Second
