@@ -61,6 +61,9 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 
 		reverseProxy := httputil.NewSingleHostReverseProxy(target)
 		reverseProxy.Transport = transport
+		reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error){
+			handleUnhealthyBackendResponse(w, r, err, rawTarget)
+		}
 		
 		backends = append(backends, reverseProxy)
 	}
@@ -83,4 +86,10 @@ func parseBackendURL(raw string) (*url.URL, error) {
 	}
 
 	return target, nil
+}
+
+func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, rawTarget *backend.Backend) {
+    rawTarget.SetHealthy(false)
+    log.Printf("backend %s failed: %v", rawTarget.URL, err)
+    http.Error(w, "backend unavailable", http.StatusBadGateway)
 }
