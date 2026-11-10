@@ -28,6 +28,16 @@ func TestRoundRobinWithNoBackends(t *testing.T) {
 	}
 }
 
+func TestRoundRobinIsHealthUnaware(t *testing.T) {
+	roundRobin := &RoundRobin{
+		backends: backend.Targets([]string{"http://one", "http://two"}),
+	}
+
+	if got := roundRobin.Select(); got != 0 {
+		t.Fatalf("selection = %d, want 0", got)
+	}
+}
+
 func TestRoundRobinConcurrentSelection(t *testing.T) {
 	const (
 		backendCount = 4

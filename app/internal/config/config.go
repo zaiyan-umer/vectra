@@ -17,4 +17,4 @@ var Default = Config{
 	TargetURLs: TargetURLs,
 }
 
-const HealthCheckInterval time.Duration = 2 * time.Second
+const HealthCheckInterval time.Duration = 10 * time.Second
