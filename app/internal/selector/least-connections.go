@@ -17,10 +17,10 @@ func (r *LeastConnections) Select() int {
 	}
 
 	selected := healthy[0]
-	lowest := r.backends[selected].GetActiveConnections()
+	lowest := r.backends[selected].ActiveConnections()
 
 	for _, index := range healthy[1:] {
-		connections := r.backends[index].GetActiveConnections()
+		connections := r.backends[index].ActiveConnections()
 		if connections < lowest {
 			selected = index
 			lowest = connections

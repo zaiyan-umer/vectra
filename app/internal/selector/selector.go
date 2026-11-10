@@ -31,6 +31,13 @@ func New(algorithm string, targetBackends []*backend.Backend) (http.Handler, err
 		}
 
 		return proxy.NewProxy(leastConnections, targetBackends)
+
+	case config.AlgorithmLatencyAware:
+		latencyAware := &LatencyAware{
+			backends: targetBackends,
+		}
+
+		return proxy.NewProxy(latencyAware, targetBackends)
 		
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %q", algorithm)

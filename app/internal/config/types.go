@@ -8,3 +8,4 @@ type Config struct {
 const AlgorithmRoundRobin = "round_robin"
 const AlgorithmHealthyRoundRobin = "healthy_round_robin"
 const AlgorithmLeastConnections = "least_connections"
+const AlgorithmLatencyAware = "latency_aware"

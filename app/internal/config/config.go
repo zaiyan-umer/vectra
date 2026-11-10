@@ -10,7 +10,7 @@ var TargetURLs = []string{
 }
 
 // default algorithm is round robin
-var Algorithm = AlgorithmLeastConnections
+var Algorithm = AlgorithmLatencyAware
 
 var Default = Config{
 	Algorithm:  Algorithm,
