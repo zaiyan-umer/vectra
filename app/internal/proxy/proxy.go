@@ -3,9 +3,11 @@ package proxy
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 )
@@ -41,13 +43,26 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 
 	backends := make([]*httputil.ReverseProxy, 0, len(targetBackends))
 
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout: 5 * time.Second,
+		}).DialContext,
+
+		TLSHandshakeTimeout: 5 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+		IdleConnTimeout: 90 * time.Second,
+	}
+
 	for _, rawTarget := range targetBackends {
 		target, err := parseBackendURL(rawTarget.URL)
 		if err != nil {
 			return nil, err
 		}
 
-		backends = append(backends, httputil.NewSingleHostReverseProxy(target))
+		reverseProxy := httputil.NewSingleHostReverseProxy(target)
+		reverseProxy.Transport = transport
+		
+		backends = append(backends, reverseProxy)
 	}
 
 	return &Proxy{selector: selector, proxies: backends}, nil

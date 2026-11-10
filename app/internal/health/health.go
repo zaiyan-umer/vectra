@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -19,7 +20,7 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 	wg.Add(len(backends))
 
 	for _, target := range backends {
-		go func(target *backend.Backend){
+		go func(target *backend.Backend) {
 			defer wg.Done()
 			url := target.URL + "/health"
 
@@ -39,7 +40,7 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 				log.Printf("HEALTH CHECK FAILED - %s\n", target.URL)
 				return
 			}
-			
+
 			target.SetHealthy(true)
 			log.Printf("HEALTH CHECK - %s, Healthy: %t\n", target.URL, target.IsHealthy())
 		}(target)
@@ -47,7 +48,11 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 	wg.Wait()
 }
 
-func Run(ctx context.Context, backends []*backend.Backend, interval time.Duration) {
+func Run(ctx context.Context, backends []*backend.Backend, interval time.Duration) error {
+	if interval <= 0 {
+		return fmt.Errorf("health-check interval must be positive: %s", interval)
+	}
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -58,7 +63,7 @@ func Run(ctx context.Context, backends []*backend.Backend, interval time.Duratio
 		case <-ticker.C:
 			HealthCheck(ctx, backends)
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
 }

@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 )
@@ -54,5 +56,39 @@ func TestHealthCheckHonorsCanceledContext(t *testing.T) {
 
 	if backends[0].IsHealthy() {
 		t.Error("canceled health check marked backend healthy")
+	}
+}
+
+func TestRunRejectsNonPositiveInterval(t *testing.T) {
+	for _, interval := range []time.Duration{0, -time.Second} {
+		t.Run(interval.String(), func(t *testing.T) {
+			err := Run(context.Background(), nil, interval)
+			if err == nil {
+				t.Fatal("Run returned nil error for non-positive interval")
+			}
+			if !strings.Contains(err.Error(), "health-check interval must be positive") {
+				t.Fatalf("error = %q, want interval validation error", err)
+			}
+		})
+	}
+}
+
+func TestRunStopsWhenContextIsCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+
+	go func() {
+		done <- Run(ctx, nil, time.Millisecond)
+	}()
+
+	cancel()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run returned error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Run did not stop after context cancellation")
 	}
 }

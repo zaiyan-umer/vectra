@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
@@ -23,14 +24,23 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go health.Run(ctx, targetBackends, config.HealthCheckInterval)
+	go func() {
+		if err := health.Run(ctx, targetBackends, config.HealthCheckInterval); err != nil {
+			log.Printf("health checker stopped: %v", err)
+			cancel()
+		}
+	}()
 
 	mux := http.NewServeMux()
 	mux.Handle("/", proxy)
 
 	httpServer := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	log.Printf("server is listening on %s", httpServer.Addr)
