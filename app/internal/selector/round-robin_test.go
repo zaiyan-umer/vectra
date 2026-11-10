@@ -14,7 +14,7 @@ func TestRoundRobinCyclesThroughBackends(t *testing.T) {
 
 	want := []int{0, 1, 2, 0, 1}
 	for i, expected := range want {
-		if got := roundRobin.Acquire(); got != expected {
+		if got := roundRobin.Select(); got != expected {
 			t.Errorf("selection %d = %d, want %d", i, got, expected)
 		}
 	}
@@ -23,7 +23,7 @@ func TestRoundRobinCyclesThroughBackends(t *testing.T) {
 func TestRoundRobinWithNoBackends(t *testing.T) {
 	roundRobin := &RoundRobin{}
 
-	if got := roundRobin.Acquire(); got != -1 {
+	if got := roundRobin.Select(); got != -1 {
 		t.Fatalf("got %d, want -1", got)
 	}
 }
@@ -33,7 +33,7 @@ func TestRoundRobinIsHealthUnaware(t *testing.T) {
 		backends: backend.Targets([]string{"http://one", "http://two"}),
 	}
 
-	if got := roundRobin.Acquire(); got != 0 {
+	if got := roundRobin.Select(); got != 0 {
 		t.Fatalf("selection = %d, want 0", got)
 	}
 }
@@ -55,7 +55,7 @@ func TestRoundRobinConcurrentSelection(t *testing.T) {
 	for range selections {
 		go func() {
 			defer wg.Done()
-			selection := roundRobin.Acquire()
+			selection := roundRobin.Select()
 			if selection >= 0 && selection < backendCount {
 				countsMu.Lock()
 				counts[selection]++

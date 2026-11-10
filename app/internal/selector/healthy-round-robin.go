@@ -12,7 +12,7 @@ type HealthyRoundRobin struct {
 	next     atomic.Uint64
 }
 
-func (r *HealthyRoundRobin) Acquire() int {
+func (r *HealthyRoundRobin) Select() int {
 	healthy := health.GetHealthyBackendIndices(r.backends)
 
 	if len(healthy) == 0 {
@@ -22,5 +22,3 @@ func (r *HealthyRoundRobin) Acquire() int {
 	position := (r.next.Add(1) - 1) % uint64(len(healthy))
 	return healthy[position]
 }
-
-func (r *HealthyRoundRobin) Release() {}

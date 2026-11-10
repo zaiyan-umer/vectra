@@ -17,15 +17,21 @@ func New(algorithm string, targetBackends []*backend.Backend) (http.Handler, err
 		}
 
 		return proxy.NewProxy(roundRobin, targetBackends)
-		
+
 	case config.AlgorithmHealthyRoundRobin:
 		HealthyRoundRobin := &HealthyRoundRobin{
 			backends: targetBackends,
 		}
 
 		return proxy.NewProxy(HealthyRoundRobin, targetBackends)
-	// case config.AlgorithmLeastConnections:
-	//     return NewLeastConnectionsProxy(targetBackends)
+
+	case config.AlgorithmLeastConnections:
+		leastConnections := &LeastConnections{
+			backends: targetBackends,
+		}
+
+		return proxy.NewProxy(leastConnections, targetBackends)
+		
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %q", algorithm)
 	}

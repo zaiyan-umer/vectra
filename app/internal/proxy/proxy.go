@@ -15,25 +15,27 @@ import (
 // Any type that has a Select() method satisfies BackendSelector interface.
 // So each algorithm must implement Select() so it's Select() method can be used here
 type BackendSelector interface {
-	Acquire() int
-	Release()
+	Select() int
 }
 
 type Proxy struct {
 	selector BackendSelector
+	backends []*backend.Backend
 	proxies  []*httputil.ReverseProxy
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// index := p.selector.Select()
-	index := p.selector.Acquire()
-	defer p.selector.Release()
+	index := p.selector.Select()
 
 	if index < 0 || index >= len(p.proxies) {
 		log.Printf("invalid backend index: %d", index)
 		http.Error(w, "no backend is available", http.StatusServiceUnavailable)
 		return
 	}
+
+	target := p.backends[index]
+	target.Acquire()
+	defer target.Release()
 
 	// we need to verify that the backend is healthy
 	p.proxies[index].ServeHTTP(w, r)
@@ -51,9 +53,9 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 			Timeout: 5 * time.Second,
 		}).DialContext,
 
-		TLSHandshakeTimeout: 5 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
 		ResponseHeaderTimeout: 5 * time.Second,
-		IdleConnTimeout: 90 * time.Second,
+		IdleConnTimeout:       90 * time.Second,
 	}
 
 	for _, rawTarget := range targetBackends {
@@ -64,14 +66,14 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 
 		reverseProxy := httputil.NewSingleHostReverseProxy(target)
 		reverseProxy.Transport = transport
-		reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error){
+		reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 			handleUnhealthyBackendResponse(w, r, err, rawTarget)
 		}
-		
+
 		backends = append(backends, reverseProxy)
 	}
 
-	return &Proxy{selector: selector, proxies: backends}, nil
+	return &Proxy{selector: selector, backends: targetBackends, proxies: backends}, nil
 }
 
 func parseBackendURL(raw string) (*url.URL, error) {
@@ -92,7 +94,7 @@ func parseBackendURL(raw string) (*url.URL, error) {
 }
 
 func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, rawTarget *backend.Backend) {
-    rawTarget.SetHealthy(false)
-    log.Printf("backend %s failed: %v", rawTarget.URL, err)
-    http.Error(w, "backend unavailable", http.StatusBadGateway)
+	rawTarget.SetHealthy(false)
+	log.Printf("backend %s failed: %v", rawTarget.URL, err)
+	http.Error(w, "backend unavailable", http.StatusBadGateway)
 }

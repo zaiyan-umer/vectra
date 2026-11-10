@@ -10,7 +10,7 @@ var TargetURLs = []string{
 }
 
 // default algorithm is round robin
-var Algorithm = AlgorithmHealthyRoundRobin
+var Algorithm = AlgorithmLeastConnections
 
 var Default = Config{
 	Algorithm:  Algorithm,
