@@ -6,7 +6,7 @@ import (
 )
 
 type RoundRobin struct {
-	backends []backend.Backend
+	backends []*backend.Backend
 	next     atomic.Uint64
 }
 

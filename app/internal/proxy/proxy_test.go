@@ -16,7 +16,7 @@ func (s fixedSelector) Select() int {
 }
 
 func TestNewProxyRejectsInvalidBackendURL(t *testing.T) {
-	_, err := NewProxy(fixedSelector(0), []backend.Backend{{URL: "ftp://backend"}})
+	_, err := NewProxy(fixedSelector(0), []*backend.Backend{{URL: "ftp://backend"}})
 	if err == nil {
 		t.Fatal("NewProxy returned nil error for unsupported URL scheme")
 	}
@@ -48,7 +48,7 @@ func TestProxyForwardsRequestToSelectedBackend(t *testing.T) {
 	}))
 	defer backendServer.Close()
 
-	proxy, err := NewProxy(fixedSelector(0), []backend.Backend{{URL: backendServer.URL}})
+	proxy, err := NewProxy(fixedSelector(0), []*backend.Backend{{URL: backendServer.URL}})
 	if err != nil {
 		t.Fatalf("NewProxy returned error: %v", err)
 	}

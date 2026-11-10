@@ -34,7 +34,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.proxies[index].ServeHTTP(w, r)
 }
 
-func NewProxy(selector BackendSelector, targetBackends []backend.Backend) (*Proxy, error) {
+func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Proxy, error) {
 	if selector == nil {
 		return nil, fmt.Errorf("backend selector must not be nil")
 	}
