@@ -20,19 +20,20 @@ func (r *AdaptiveSelection) Select() int {
 	}
 
 	scores := map[int]float64{}
+	maxExpectedConnections := config.AdaptiveConfiguration.MaxExpectedConnections
+	latencyTarget := config.AdaptiveConfiguration.LatencyTarget
 
 	for _, index := range healthy {
 		activeConnections := r.backends[index].ActiveConnections()
 		latency := r.backends[index].ResponseTime()
 
 		normalizedActive := clamp(
-			float64(activeConnections)/float64(config.AdaptiveConfiguration.MaxExpectedConnections),
+			float64(activeConnections)/float64(maxExpectedConnections),
 			0, 1,
 		)
 
 		normalizedLatency := clamp(
-			float64(latency)/
-				float64(config.AdaptiveConfiguration.LatencyTarget),
+			float64(latency)/float64(latencyTarget),
 			0, 1,
 		)
 

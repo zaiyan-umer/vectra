@@ -6,10 +6,10 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"time"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
+	"github.com/zaiyan-umer/vectra/app/internal/config"
 )
 
 // Any type that has a Select() method satisfies BackendSelector interface.
@@ -63,7 +63,7 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 	}
 
 	for _, rawTarget := range targetBackends {
-		target, err := parseBackendURL(rawTarget.URL)
+		target, err := config.ParseBackendURL(rawTarget.URL)
 		if err != nil {
 			return nil, err
 		}
@@ -78,23 +78,6 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 	}
 
 	return &Proxy{selector: selector, backends: targetBackends, proxies: backends}, nil
-}
-
-func parseBackendURL(raw string) (*url.URL, error) {
-	target, err := url.Parse(raw)
-	if err != nil {
-		return nil, fmt.Errorf("parse backend URL %q: %w", raw, err)
-	}
-
-	if target.Scheme != "http" && target.Scheme != "https" {
-		return nil, fmt.Errorf("backend URL %q must use http or https", raw)
-	}
-
-	if target.Host == "" {
-		return nil, fmt.Errorf("backend URL %q must include a host", raw)
-	}
-
-	return target, nil
 }
 
 func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, rawTarget *backend.Backend) {

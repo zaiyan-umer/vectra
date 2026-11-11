@@ -40,6 +40,12 @@ func New(algorithm string, targetBackends []*backend.Backend) (http.Handler, err
 		return proxy.NewProxy(latencyAware, targetBackends)
 
 	case config.AdaptiveSelection:
+		err := config.ValidateAdaptiveConfiguration(config.AdaptiveConfiguration)
+
+		if err != nil {
+			return nil, fmt.Errorf("invalid adaptive configuration: %w", err)
+		}
+
 		adaptiveSelection := &AdaptiveSelection{
 			backends: targetBackends,
 		}
