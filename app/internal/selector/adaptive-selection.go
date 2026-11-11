@@ -3,6 +3,7 @@ package selector
 import (
 	"log"
 	"math"
+	"sync"
 	"sync/atomic"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
@@ -13,9 +14,29 @@ import (
 type AdaptiveSelection struct {
 	backends []*backend.Backend
 	next     atomic.Uint64
+	mu       sync.Mutex
 }
 
 func (r *AdaptiveSelection) Select() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return r.selectLocked()
+}
+
+func (r *AdaptiveSelection) SelectAndAcquire() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	selected := r.selectLocked()
+	if selected >= 0 {
+		r.backends[selected].Acquire()
+	}
+
+	return selected
+}
+
+func (r *AdaptiveSelection) selectLocked() int {
 	healthy := health.GetHealthyBackendIndices(r.backends)
 
 	if len(healthy) == 0 {

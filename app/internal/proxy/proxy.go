@@ -18,6 +18,10 @@ type BackendSelector interface {
 	Select() int
 }
 
+type AcquiringBackendSelector interface {
+	SelectAndAcquire() int
+}
+
 type Proxy struct {
 	selector BackendSelector
 	backends []*backend.Backend
@@ -25,7 +29,14 @@ type Proxy struct {
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	index := p.selector.Select()
+	acquiringSelector, acquires := p.selector.(AcquiringBackendSelector)
+
+	var index int
+	if acquires {
+		index = acquiringSelector.SelectAndAcquire()
+	} else {
+		index = p.selector.Select()
+	}
 
 	if index < 0 || index >= len(p.proxies) {
 		log.Printf("invalid backend index: %d", index)
@@ -34,7 +45,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	target := p.backends[index]
-	target.Acquire()
+	if !acquires {
+		target.Acquire()
+	}
 	defer target.Release()
 
 	start := time.Now()
