@@ -12,6 +12,7 @@ type AdaptiveConfig struct {
     LatencyTarget          time.Duration
     ActiveWeight           float64
     LatencyWeight          float64
+    Tolerance              float64
 }
 
 const AlgorithmRoundRobin = "round_robin"

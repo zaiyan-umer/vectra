@@ -24,4 +24,5 @@ var AdaptiveConfiguration = AdaptiveConfig{
     LatencyTarget:          500 * time.Millisecond,
     ActiveWeight:           0.5,
     LatencyWeight:          0.5,
+	Tolerance: 				0.00001,
 }

@@ -17,6 +17,13 @@ func (r *RoundRobin) Select() int {
 		return -1
 	}
 
-	index := (r.next.Add(1) - 1) % uint64(backendLength)
-	return int(index)
+	return NextRoundRobinIndex(backendLength, &r.next)
+}
+
+func NextRoundRobinIndex(length int, next *atomic.Uint64) int {
+    if length == 0 {
+        return -1
+    }
+
+    return int((next.Add(1) - 1) % uint64(length))
 }

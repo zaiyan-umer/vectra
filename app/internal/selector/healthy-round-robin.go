@@ -19,6 +19,6 @@ func (r *HealthyRoundRobin) Select() int {
 		return -1
 	}
 
-	position := (r.next.Add(1) - 1) % uint64(len(healthy))
+	position := NextRoundRobinIndex(len(healthy), &r.next)
 	return healthy[position]
 }
