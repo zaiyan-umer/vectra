@@ -38,6 +38,13 @@ func New(algorithm string, targetBackends []*backend.Backend) (http.Handler, err
 		}
 
 		return proxy.NewProxy(latencyAware, targetBackends)
+
+	case config.AdaptiveSelection:
+		adaptiveSelection := &AdaptiveSelection{
+			backends: targetBackends,
+		}
+
+		return proxy.NewProxy(adaptiveSelection, targetBackends)
 		
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %q", algorithm)

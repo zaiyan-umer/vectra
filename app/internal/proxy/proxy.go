@@ -42,7 +42,6 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		target.UpdateResponseTime(time.Since(start), 0.25)
 	}()
 
-	// we need to verify that the backend is healthy
 	p.proxies[index].ServeHTTP(w, r)
 }
 

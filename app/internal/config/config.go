@@ -10,7 +10,7 @@ var TargetURLs = []string{
 }
 
 // default algorithm is round robin
-var Algorithm = AlgorithmLatencyAware
+var Algorithm = AdaptiveSelection
 
 var Default = Config{
 	Algorithm:  Algorithm,
@@ -18,3 +18,10 @@ var Default = Config{
 }
 
 const HealthCheckInterval time.Duration = 10 * time.Second
+
+var AdaptiveConfiguration = AdaptiveConfig{
+    MaxExpectedConnections: 100,
+    LatencyTarget:          500 * time.Millisecond,
+    ActiveWeight:           0.5,
+    LatencyWeight:          0.5,
+}
