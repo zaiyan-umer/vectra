@@ -10,13 +10,19 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
 	"github.com/zaiyan-umer/vectra/app/internal/health"
+	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 	"github.com/zaiyan-umer/vectra/app/internal/selector"
 )
 
 func main() {
 	targetBackends := backend.Targets(config.TargetURLs)
 
-	proxy, err := selector.New(config.Default.Algorithm, targetBackends)
+	result, err := metrics.NewBenchmarkResult(targetBackends)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	proxy, err := selector.New(config.Default.Algorithm, targetBackends, result)
 	if err != nil {
 		log.Fatal(err)
 	}

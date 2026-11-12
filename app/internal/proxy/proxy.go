@@ -12,6 +12,7 @@ import (
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
+	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 )
 
 // Any type that has a Select() method satisfies BackendSelector interface.
@@ -25,9 +26,10 @@ type AcquiringBackendSelector interface {
 }
 
 type Proxy struct {
-	selector BackendSelector
-	backends []*backend.Backend
-	proxies  []*httputil.ReverseProxy
+	selector         BackendSelector
+	backends         []*backend.Backend
+	proxies          []*httputil.ReverseProxy
+	benchmarkResults *metrics.BenchmarkResult
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +49,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	target := p.backends[index]
+	p.benchmarkResults.RecordSelected(index)
+
 	if !acquires {
 		target.Acquire()
 	}
@@ -58,14 +62,43 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	p.proxies[index].ServeHTTP(w, r)
+	
+	latency := time.Since(start)
+	p.benchmarkResults.RecordCompleted(index, latency)
+
+	backendMetrics := &p.benchmarkResults.Backends[index]
+
+	completed := backendMetrics.CompletedRequests.Load()
+	averageLatency := time.Duration(0)
+
+	if completed > 0 {
+		averageLatency = time.Duration(
+			backendMetrics.TotalLatencyNs.Load() / int64(completed),
+		)
+	}
+
+	log.Printf(
+		"benchmark backend=%d selected=%d completed=%d errors=%d average_latency=%s",
+		index+1,
+		backendMetrics.SelectedRequests.Load(),
+		completed,
+		backendMetrics.Errors.Load(),
+		averageLatency,
+	)
 }
 
-func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Proxy, error) {
+func NewProxy(selector BackendSelector, targetBackends []*backend.Backend, benchmarkResults ...*metrics.BenchmarkResult) (*Proxy, error) {
 	if selector == nil {
 		return nil, fmt.Errorf("backend selector must not be nil")
 	}
 
-	backends := make([]*httputil.ReverseProxy, 0, len(targetBackends))
+	benchmarkResult, err := metrics.NewBenchmarkResult(targetBackends)
+	if len(benchmarkResults) > 0 && benchmarkResults[0] != nil {
+		benchmarkResult = benchmarkResults[0]
+	}
+	if err != nil {
+		return nil, err
+	}
 
 	transport := &http.Transport{
 		DialContext: (&net.Dialer{
@@ -77,7 +110,14 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 		IdleConnTimeout:       90 * time.Second,
 	}
 
-	for _, rawTarget := range targetBackends {
+	p := &Proxy{
+		selector:         selector,
+		backends:         targetBackends,
+		proxies:          make([]*httputil.ReverseProxy, 0, len(targetBackends)),
+		benchmarkResults: benchmarkResult,
+	}
+
+	for index, rawTarget := range targetBackends {
 		target, err := config.ParseBackendURL(rawTarget.URL)
 		if err != nil {
 			return nil, err
@@ -85,14 +125,20 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 
 		reverseProxy := httputil.NewSingleHostReverseProxy(target)
 		reverseProxy.Transport = transport
+
+		backendIndex := index
 		reverseProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+			if !errors.Is(err, context.Canceled) {
+				p.benchmarkResults.RecordError(backendIndex)
+			}
+
 			handleUnhealthyBackendResponse(w, r, err, rawTarget)
 		}
 
-		backends = append(backends, reverseProxy)
+		p.proxies = append(p.proxies, reverseProxy)
 	}
 
-	return &Proxy{selector: selector, backends: targetBackends, proxies: backends}, nil
+	return p, nil
 }
 
 func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, rawTarget *backend.Backend) {
