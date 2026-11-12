@@ -1,7 +1,7 @@
 package selector
 
 import (
-	"log"
+	// "log"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -65,13 +65,13 @@ func (r *AdaptiveSelection) selectLocked() int {
 		score := config.AdaptiveConfiguration.ActiveWeight*normalizedActive + config.AdaptiveConfiguration.LatencyWeight*normalizedLatency
 
 		scores[index] = score
-		log.Printf(
-			"adaptive backend=%d active_connections=%d latency=%s score=%.4f",
-			index+1,
-			activeConnections,
-			latency,
-			score,
-		)
+		// log.Printf(
+		// 	"adaptive backend=%d active_connections=%d latency=%s score=%.4f",
+		// 	index+1,
+		// 	activeConnections,
+		// 	latency,
+		// 	score,
+		// )
 	}
 
 	selected := healthy[0]

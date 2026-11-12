@@ -76,6 +76,9 @@ func writeText(w http.ResponseWriter, status int, message string) {
 }
 
 func logRequest(serverName string, r *http.Request) {
+	if r.URL.Path == "/health" {
+        return
+    }
 	log.Printf(
 		"REQ server=%s method=%s path=%s remote=%s user_agent=%q",
 		serverName,
