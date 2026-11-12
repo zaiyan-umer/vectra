@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -94,6 +96,11 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend) (*Pro
 }
 
 func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, rawTarget *backend.Backend) {
+	if errors.Is(err, context.Canceled) {
+		log.Printf("request canceled for backend %s: %v", rawTarget.URL, err)
+		return
+	}
+
 	rawTarget.SetHealthy(false)
 	log.Printf("backend %s failed: %v", rawTarget.URL, err)
 	http.Error(w, "backend unavailable", http.StatusBadGateway)
