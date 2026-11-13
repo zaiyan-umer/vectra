@@ -37,11 +37,16 @@ func main() {
 		}
 	}()
 
+	metricsHandler := metrics.NewHandler(result)
+
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /benchmarks/", metricsHandler.StartBenchmark)
+	mux.HandleFunc("GET /benchmarks/", metricsHandler.GetBenchmark)
 	mux.Handle("/", proxy)
 
 	httpServer := &http.Server{
-		Addr:              ":8080",
+		Addr:              config.LoadBalancerURL,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,

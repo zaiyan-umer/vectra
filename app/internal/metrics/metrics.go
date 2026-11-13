@@ -23,6 +23,15 @@ type BenchmarkResult struct {
 	Backends   []BackendBenchmark
 }
 
+type BackendStats struct {
+    BackendIndex      int
+    URL               string
+    SelectedRequests  uint64
+    CompletedRequests uint64
+    Errors            uint64
+    TotalLatencyNs    int64
+}
+
 func NewBenchmarkResult(backends []*backend.Backend) (*BenchmarkResult, error) {
 	result := &BenchmarkResult{
 		StartedAt: time.Now(),
@@ -78,4 +87,48 @@ func (b *BenchmarkResult) RecordError(index int) error {
 
 	b.Backends[index].Errors.Add(1)
 	return nil
+}
+
+func (b *BenchmarkResult) CaptureSnapshot() BenchmarkResult {
+    snapshot := BenchmarkResult{
+        StartedAt: b.StartedAt,
+        Backends:  make([]BackendBenchmark, len(b.Backends)),
+    }
+
+    for i := range b.Backends {
+        current := &b.Backends[i]
+        copy := BackendBenchmark{
+            BackendIndex: current.BackendIndex,
+            URL:          current.URL,
+        }
+
+        copy.SelectedRequests.Store(current.SelectedRequests.Load())
+        copy.CompletedRequests.Store(current.CompletedRequests.Load())
+        copy.Errors.Store(current.Errors.Load())
+        copy.TotalLatencyNs.Store(current.TotalLatencyNs.Load())
+
+        snapshot.Backends[i] = copy
+    }
+
+    return snapshot
+}
+
+func (b *BenchmarkResult) Difference(old BenchmarkResult) []BackendStats {
+    stats := make([]BackendStats, len(b.Backends))
+
+    for i := range b.Backends {
+        current := &b.Backends[i]
+        previous := &old.Backends[i]
+
+        stats[i] = BackendStats{
+            BackendIndex:      current.BackendIndex,
+            URL:               current.URL,
+            SelectedRequests:  current.SelectedRequests.Load() - previous.SelectedRequests.Load(),
+            CompletedRequests: current.CompletedRequests.Load() - previous.CompletedRequests.Load(),
+            Errors:             current.Errors.Load() - previous.Errors.Load(),
+            TotalLatencyNs:     current.TotalLatencyNs.Load() - previous.TotalLatencyNs.Load(),
+        }
+    }
+
+    return stats
 }

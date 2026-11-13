@@ -9,6 +9,8 @@ var TargetURLs = []string{
 	"http://localhost:8083",
 }
 
+const LoadBalancerURL = "localhost:8080"
+
 // default algorithm is round robin
 var Algorithm = AdaptiveSelection
 
