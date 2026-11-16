@@ -5,10 +5,12 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
+	"github.com/zaiyan-umer/vectra/app/internal/db"
 	"github.com/zaiyan-umer/vectra/app/internal/health"
 	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 	"github.com/zaiyan-umer/vectra/app/internal/selector"
@@ -19,12 +21,22 @@ func main() {
 
 	result, err := metrics.NewBenchmarkResult(targetBackends)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("main.metrics.NewBenchmarkResult: %v", err)
 	}
 
 	proxy, err := selector.New(config.Default.Algorithm, targetBackends, result)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("main.selector.New: %v", err)
+	}
+
+	dbUrl := os.Getenv("DATABASE_URL")
+	if dbUrl == "" {
+		log.Fatalf("main.os.Getenv: DATABASE_URL is required.")
+	}
+
+	_, err = db.Connect(dbUrl)
+	if err != nil {
+		log.Fatalf("main.db.Connect: %v", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
