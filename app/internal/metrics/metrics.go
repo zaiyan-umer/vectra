@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"math"
 	"sync/atomic"
 	"time"
 
@@ -24,12 +25,13 @@ type BenchmarkResult struct {
 }
 
 type BackendStats struct {
-    BackendIndex      int
-    URL               string
-    SelectedRequests  uint64
-    CompletedRequests uint64
-    Errors            uint64
-    TotalLatencyNs    int64
+	BackendIndex      int     `json:"index"`
+	URL               string  `json:"url"`
+	SelectedRequests  uint64  `json:"assignedRequests"`
+	CompletedRequests uint64  `json:"completedRequests"`
+	Errors            uint64  `json:"errors"`
+	AverageLatencyMs  float64 `json:"averageLatencyMs"`
+	TrafficShare      float64 `json:"trafficShare"`
 }
 
 func NewBenchmarkResult(backends []*backend.Backend) (*BenchmarkResult, error) {
@@ -90,45 +92,58 @@ func (b *BenchmarkResult) RecordError(index int) error {
 }
 
 func (b *BenchmarkResult) CaptureSnapshot() BenchmarkResult {
-    snapshot := BenchmarkResult{
-        StartedAt: b.StartedAt,
-        Backends:  make([]BackendBenchmark, len(b.Backends)),
-    }
+	snapshot := BenchmarkResult{
+		StartedAt: b.StartedAt,
+		Backends:  make([]BackendBenchmark, len(b.Backends)),
+	}
 
-    for i := range b.Backends {
-        current := &b.Backends[i]
-        copy := BackendBenchmark{
-            BackendIndex: current.BackendIndex,
-            URL:          current.URL,
-        }
+	for i := range b.Backends {
+		current := &b.Backends[i]
+		copy := BackendBenchmark{
+			BackendIndex: current.BackendIndex,
+			URL:          current.URL,
+		}
 
-        copy.SelectedRequests.Store(current.SelectedRequests.Load())
-        copy.CompletedRequests.Store(current.CompletedRequests.Load())
-        copy.Errors.Store(current.Errors.Load())
-        copy.TotalLatencyNs.Store(current.TotalLatencyNs.Load())
+		copy.SelectedRequests.Store(current.SelectedRequests.Load())
+		copy.CompletedRequests.Store(current.CompletedRequests.Load())
+		copy.Errors.Store(current.Errors.Load())
+		copy.TotalLatencyNs.Store(current.TotalLatencyNs.Load())
 
-        snapshot.Backends[i] = copy
-    }
+		snapshot.Backends[i] = copy
+	}
 
-    return snapshot
+	return snapshot
 }
 
 func (b *BenchmarkResult) Difference(old BenchmarkResult) []BackendStats {
-    stats := make([]BackendStats, len(b.Backends))
+	stats := make([]BackendStats, len(b.Backends))
+	totalSelected := uint64(0)
 
-    for i := range b.Backends {
-        current := &b.Backends[i]
-        previous := &old.Backends[i]
+	for i := range b.Backends {
+		current := &b.Backends[i]
+		previous := &old.Backends[i]
+		selected := current.SelectedRequests.Load() - previous.SelectedRequests.Load()
+		completed := current.CompletedRequests.Load() - previous.CompletedRequests.Load()
+		latencyNs := current.TotalLatencyNs.Load() - previous.TotalLatencyNs.Load()
 
-        stats[i] = BackendStats{
-            BackendIndex:      current.BackendIndex,
-            URL:               current.URL,
-            SelectedRequests:  current.SelectedRequests.Load() - previous.SelectedRequests.Load(),
-            CompletedRequests: current.CompletedRequests.Load() - previous.CompletedRequests.Load(),
-            Errors:             current.Errors.Load() - previous.Errors.Load(),
-            TotalLatencyNs:     current.TotalLatencyNs.Load() - previous.TotalLatencyNs.Load(),
-        }
-    }
+		stats[i] = BackendStats{
+			BackendIndex:      current.BackendIndex,
+			URL:               current.URL,
+			SelectedRequests:  selected,
+			CompletedRequests: completed,
+			Errors:            current.Errors.Load() - previous.Errors.Load(),
+		}
+		if completed > 0 {
+			stats[i].AverageLatencyMs = math.Round(float64(latencyNs)/float64(completed)/float64(time.Millisecond)*100) / 100
+		}
+		totalSelected += selected
+	}
 
-    return stats
+	if totalSelected > 0 {
+		for i := range stats {
+			stats[i].TrafficShare = math.Round(float64(stats[i].SelectedRequests)/float64(totalSelected)*100*100) / 100
+		}
+	}
+
+	return stats
 }
