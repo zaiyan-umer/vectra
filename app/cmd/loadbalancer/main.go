@@ -17,14 +17,16 @@ import (
 )
 
 func main() {
-	targetBackends := backend.Targets(config.TargetURLs)
+	cfg := config.MustLoad()
+
+	targetBackends := backend.Targets(cfg.TargetURLs)
 
 	result, err := metrics.NewBenchmarkResult(targetBackends)
 	if err != nil {
 		log.Fatalf("main.metrics.NewBenchmarkResult: %v", err)
 	}
 
-	proxy, err := selector.New(config.Default.Algorithm, targetBackends, result)
+	proxy, err := selector.New(cfg.Algorithm, targetBackends, result)
 	if err != nil {
 		log.Fatalf("main.selector.New: %v", err)
 	}
@@ -58,7 +60,7 @@ func main() {
 	mux.Handle("/", proxy)
 
 	httpServer := &http.Server{
-		Addr:              config.LoadBalancerURL,
+		Addr:              ":" + cfg.Port,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,

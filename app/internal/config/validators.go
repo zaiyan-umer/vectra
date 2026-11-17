@@ -37,3 +37,18 @@ func ParseBackendURL(raw string) (*url.URL, error) {
 
 	return target, nil
 }
+
+func ParseAlgorithm(value string) (string, error) {
+    switch value {
+    case AlgorithmRoundRobin,
+        AlgorithmHealthyRoundRobin,
+        AlgorithmLeastConnections,
+        AlgorithmLatencyAware,
+        AdaptiveSelection:
+        return value, nil
+    case "":
+        return AdaptiveSelection, nil
+    default:
+        return "", fmt.Errorf("unsupported algorithm: %q", value)
+    }
+}
