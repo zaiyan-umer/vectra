@@ -1,5 +1,5 @@
 CREATE TABLE benchmarks (
-    id TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
     status TEXT NOT NULL DEFAULT 'queued'
         CHECK (status IN ('queued', 'running', 'completed', 'failed', 'canceled')),
     duration_seconds INTEGER NOT NULL CHECK (duration_seconds > 0),
