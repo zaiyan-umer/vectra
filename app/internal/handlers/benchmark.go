@@ -19,6 +19,7 @@ import (
 
 type Handler struct {
 	result *metrics.BenchmarkRuntimeSnapshot
+	db *sql.DB
 }
 
 type BenchmarkRecord struct {
@@ -34,8 +35,18 @@ type BenchmarkRecord struct {
 	CreatedAt       time.Time  `json:"createdAt"`
 }
 
-func NewHandler(result *metrics.BenchmarkRuntimeSnapshot) *Handler {
-	return &Handler{result: result}
+type BenchmarkResultRecord struct {
+	Autocannon json.RawMessage `json:"autocannon"`
+	Routing    json.RawMessage `json:"routing"`
+}
+
+type BenchmarkDetailRecord struct {
+	BenchmarkRecord
+	Result *BenchmarkResultRecord `json:"result,omitempty"`
+}
+
+func NewHandler(result *metrics.BenchmarkRuntimeSnapshot, db *sql.DB) *Handler {
+	return &Handler{result: result, db: db}
 }
 
 func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
@@ -110,21 +121,20 @@ func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) GetBenchmark(db *sql.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := db.Query(
-			`SELECT id, status, duration_seconds, connections, algorithm,
-			target_url, started_at, finished_at, error, created_at
-			FROM benchmarks`,
-		)
-		if err != nil {
-			log.Printf("db.query: %v", err)
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
+func (h *Handler) GetBenchmarks(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.db.Query(
+		`SELECT id, status, duration_seconds, connections, algorithm,
+		target_url, started_at, finished_at, error, created_at
+		FROM benchmarks`,
+	)
+	if err != nil {
+		log.Printf("db.query: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-		benchmarks := []BenchmarkRecord{}
+	benchmarks := []BenchmarkRecord{}
 
 		for rows.Next() {
 			var b BenchmarkRecord
@@ -173,6 +183,105 @@ func (h *Handler) GetBenchmark(db *sql.DB) http.HandlerFunc {
 		if err := json.NewEncoder(w).Encode(benchmarks); err != nil {
 			log.Printf("json.encode: %v", err)
 		}
+}
+
+func (h *Handler) DeleteBenchmark(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	res, err := h.db.Exec(`DELETE FROM benchmarks WHERE id = $1`, id)
+	if err != nil {
+		log.Printf("delete: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("delete benchmark %q: %v", id, err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if affected == 0 {
+		http.Error(w, "benchmark not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) GetBenchmark(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	row := h.db.QueryRow(`
+		SELECT
+			b.id,
+			b.status,
+			b.duration_seconds,
+			b.connections,
+			b.algorithm,
+			b.target_url,
+			b.started_at,
+			b.finished_at,
+			b.error,
+			b.created_at,
+			r.autocannon_json,
+			r.routing_json
+		FROM benchmarks b
+		LEFT JOIN benchmark_results r ON r.benchmark_id = b.id
+		WHERE b.id = $1
+	`, id)
+
+	var benchmark BenchmarkDetailRecord
+	var startedAt sql.NullTime
+	var finishedAt sql.NullTime
+	var benchmarkError sql.NullString
+	var autocannonJSON []byte
+	var routingJSON []byte
+
+	err := row.Scan(
+		&benchmark.ID,
+		&benchmark.Status,
+		&benchmark.DurationSeconds,
+		&benchmark.Connections,
+		&benchmark.Algorithm,
+		&benchmark.TargetURL,
+		&startedAt,
+		&finishedAt,
+		&benchmarkError,
+		&benchmark.CreatedAt,
+		&autocannonJSON,
+		&routingJSON,
+	)
+	if err == sql.ErrNoRows {
+		http.Error(w, "benchmark not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		log.Printf("db.query benchmark %q: %v", id, err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if startedAt.Valid {
+		benchmark.StartedAt = &startedAt.Time
+	}
+	if finishedAt.Valid {
+		benchmark.FinishedAt = &finishedAt.Time
+	}
+	if benchmarkError.Valid {
+		benchmark.Error = &benchmarkError.String
+	}
+	if len(autocannonJSON) > 0 && len(routingJSON) > 0 {
+		benchmark.Result = &BenchmarkResultRecord{
+			Autocannon: json.RawMessage(autocannonJSON),
+			Routing:    json.RawMessage(routingJSON),
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(benchmark); err != nil {
+		log.Printf("json.encode: %v", err)
 	}
 }
 

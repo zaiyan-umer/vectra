@@ -52,12 +52,14 @@ func main() {
 		}
 	}()
 
-	metricsHandler := handlers.NewHandler(result)
+	metricsHandler := handlers.NewHandler(result, dbConnection)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /benchmarks/", metricsHandler.StartBenchmark)
-	mux.HandleFunc("GET /benchmarks/", metricsHandler.GetBenchmark(dbConnection))
+	mux.HandleFunc("GET /benchmarks/{id}", metricsHandler.GetBenchmark)
+	mux.HandleFunc("GET /benchmarks/", metricsHandler.GetBenchmarks)
+	mux.HandleFunc("DELETE /benchmarks/{id}", metricsHandler.DeleteBenchmark)
 	mux.Handle("/", proxy)
 
 	httpServer := &http.Server{
