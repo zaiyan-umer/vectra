@@ -1,0 +1,187 @@
+package handlers
+
+import (
+	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os/exec"
+	"strconv"
+	"time"
+
+	"github.com/zaiyan-umer/vectra/app/internal/config"
+	"github.com/zaiyan-umer/vectra/app/internal/metrics"
+)
+
+type Handler struct {
+	result *metrics.BenchmarkRuntimeSnapshot
+}
+
+type BenchmarkRecord struct {
+	ID              string     `json:"id"`
+	Status          string     `json:"status"`
+	DurationSeconds int        `json:"durationSeconds"`
+	Connections     int        `json:"connections"`
+	Algorithm       string     `json:"algorithm"`
+	TargetURL       string     `json:"targetUrl"`
+	StartedAt       *time.Time `json:"startedAt"`
+	FinishedAt      *time.Time `json:"finishedAt"`
+	Error           *string    `json:"error"`
+	CreatedAt       time.Time  `json:"createdAt"`
+}
+
+func NewHandler(result *metrics.BenchmarkRuntimeSnapshot) *Handler {
+	return &Handler{result: result}
+}
+
+func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
+	cfg := config.MustLoad()
+
+	request := metrics.BenchmarkRequest{Algorithm: cfg.Algorithm}
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		http.Error(w, "invalid benchmark request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if request.DurationSeconds <= 0 || request.DurationSeconds > 120 {
+		http.Error(w, "durationSeconds must be between 1 and 120", http.StatusBadRequest)
+		return
+	}
+	if request.Connections <= 0 || request.Connections > 1000 {
+		http.Error(w, "connections must be between 1 and 1000", http.StatusBadRequest)
+		return
+	}
+
+	benchmarkID, err := newBenchmarkID()
+	if err != nil {
+		http.Error(w, "failed to create benchmark ID", http.StatusInternalServerError)
+		return
+	}
+
+	before := h.result.CaptureSnapshot()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	targetURL := "http://" + cfg.Port + "/health"
+	cmd := exec.CommandContext(
+		ctx,
+		"npx",
+		"--yes",
+		"autocannon",
+		"--json",
+		"-c", strconv.Itoa(request.Connections),
+		"-d", strconv.Itoa(request.DurationSeconds),
+		targetURL,
+	)
+
+	output, err := cmd.Output()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	after := h.result.CaptureSnapshot()
+	report := after.Difference(before)
+
+	var autocannonResult json.RawMessage
+	if err := json.Unmarshal(output, &autocannonResult); err != nil {
+		http.Error(w, "invalid autocannon output", http.StatusInternalServerError)
+		return
+	}
+
+	response := metrics.BenchmarkRunResponse{
+		ID:         benchmarkID,
+		Status:     "completed",
+		Config:     request,
+		Autocannon: autocannonResult,
+		Backends:   report,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "failed to encode benchmark response", http.StatusInternalServerError)
+	}
+}
+
+func (h *Handler) GetBenchmark(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rows, err := db.Query(
+			`SELECT id, status, duration_seconds, connections, algorithm,
+			target_url, started_at, finished_at, error, created_at
+			FROM benchmarks`,
+		)
+		if err != nil {
+			log.Printf("db.query: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		benchmarks := []BenchmarkRecord{}
+
+		for rows.Next() {
+			var b BenchmarkRecord
+			var startedAt sql.NullTime
+			var finishedAt sql.NullTime
+			var benchmarkError sql.NullString
+
+			err := rows.Scan(
+				&b.ID,
+				&b.Status,
+				&b.DurationSeconds,
+				&b.Connections,
+				&b.Algorithm,
+				&b.TargetURL,
+				&startedAt,
+				&finishedAt,
+				&benchmarkError,
+				&b.CreatedAt,
+			)
+			if err != nil {
+				log.Printf("rows.scan: %v", err)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			if startedAt.Valid {
+				b.StartedAt = &startedAt.Time
+			}
+			if finishedAt.Valid {
+				b.FinishedAt = &finishedAt.Time
+			}
+			if benchmarkError.Valid {
+				b.Error = &benchmarkError.String
+			}
+
+			benchmarks = append(benchmarks, b)
+		}
+
+		if err := rows.Err(); err != nil {
+			log.Printf("rows.next: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(benchmarks); err != nil {
+			log.Printf("json.encode: %v", err)
+		}
+	}
+}
+
+func newBenchmarkID() (string, error) {
+	var bytes [16]byte
+
+	if _, err := rand.Read(bytes[:]); err != nil {
+		return "", fmt.Errorf("generate benchmark ID: %w", err)
+	}
+
+	return "benchmark-" + hex.EncodeToString(bytes[:]), nil
+}

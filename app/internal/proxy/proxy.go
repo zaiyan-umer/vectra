@@ -29,7 +29,7 @@ type Proxy struct {
 	selector         BackendSelector
 	backends         []*backend.Backend
 	proxies          []*httputil.ReverseProxy
-	benchmarkResults *metrics.BenchmarkResult
+	benchmarkResults *metrics.BenchmarkRuntimeSnapshot
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	p.proxies[index].ServeHTTP(w, r)
-	
+
 	latency := time.Since(start)
 	p.benchmarkResults.RecordCompleted(index, latency)
 
@@ -87,12 +87,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func NewProxy(selector BackendSelector, targetBackends []*backend.Backend, benchmarkResults ...*metrics.BenchmarkResult) (*Proxy, error) {
+func NewProxy(selector BackendSelector, targetBackends []*backend.Backend, benchmarkResults ...*metrics.BenchmarkRuntimeSnapshot) (*Proxy, error) {
 	if selector == nil {
 		return nil, fmt.Errorf("backend selector must not be nil")
 	}
 
-	benchmarkResult, err := metrics.NewBenchmarkResult(targetBackends)
+	benchmarkResult, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends)
 	if len(benchmarkResults) > 0 && benchmarkResults[0] != nil {
 		benchmarkResult = benchmarkResults[0]
 	}

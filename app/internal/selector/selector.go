@@ -10,7 +10,7 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/proxy"
 )
 
-func New(algorithm string, targetBackends []*backend.Backend, benchmarkResult *metrics.BenchmarkResult) (http.Handler, error) {
+func New(algorithm string, targetBackends []*backend.Backend, benchmarkResult *metrics.BenchmarkRuntimeSnapshot) (http.Handler, error) {
 	switch algorithm {
 	case config.AlgorithmRoundRobin:
 		roundRobin := &RoundRobin{
@@ -52,7 +52,7 @@ func New(algorithm string, targetBackends []*backend.Backend, benchmarkResult *m
 		}
 
 		return proxy.NewProxy(adaptiveSelection, targetBackends, benchmarkResult)
-		
+
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %q", algorithm)
 	}

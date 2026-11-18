@@ -11,6 +11,7 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
 	"github.com/zaiyan-umer/vectra/app/internal/db"
+	"github.com/zaiyan-umer/vectra/app/internal/handlers"
 	"github.com/zaiyan-umer/vectra/app/internal/health"
 	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 	"github.com/zaiyan-umer/vectra/app/internal/selector"
@@ -21,9 +22,9 @@ func main() {
 
 	targetBackends := backend.Targets(cfg.TargetURLs)
 
-	result, err := metrics.NewBenchmarkResult(targetBackends)
+	result, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends)
 	if err != nil {
-		log.Fatalf("main.metrics.NewBenchmarkResult: %v", err)
+		log.Fatalf("main.metrics.NewBenchmarkRuntimeSnapshot: %v", err)
 	}
 
 	proxy, err := selector.New(cfg.Algorithm, targetBackends, result)
@@ -36,7 +37,7 @@ func main() {
 		log.Fatalf("main.os.Getenv: DATABASE_URL is required.")
 	}
 
-	_, err = db.Connect(dbUrl)
+	dbConnection, err := db.Connect(dbUrl)
 	if err != nil {
 		log.Fatalf("main.db.Connect: %v", err)
 	}
@@ -51,12 +52,12 @@ func main() {
 		}
 	}()
 
-	metricsHandler := metrics.NewHandler(result)
+	metricsHandler := handlers.NewHandler(result)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /benchmarks/", metricsHandler.StartBenchmark)
-	mux.HandleFunc("GET /benchmarks/", metricsHandler.GetBenchmark)
+	mux.HandleFunc("GET /benchmarks/", metricsHandler.GetBenchmark(dbConnection))
 	mux.Handle("/", proxy)
 
 	httpServer := &http.Server{

@@ -9,7 +9,7 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 )
 
-type BackendBenchmark struct {
+type BackendRuntimeCounters struct {
 	BackendIndex      int
 	URL               string
 	SelectedRequests  atomic.Uint64
@@ -18,13 +18,13 @@ type BackendBenchmark struct {
 	TotalLatencyNs    atomic.Int64
 }
 
-type BenchmarkResult struct {
+type BenchmarkRuntimeSnapshot struct {
 	StartedAt  time.Time
 	FinishedAt time.Time
-	Backends   []BackendBenchmark
+	Backends   []BackendRuntimeCounters
 }
 
-type BackendStats struct {
+type BackendBenchmarkStats struct {
 	BackendIndex      int     `json:"index"`
 	URL               string  `json:"url"`
 	SelectedRequests  uint64  `json:"assignedRequests"`
@@ -34,17 +34,17 @@ type BackendStats struct {
 	TrafficShare      float64 `json:"trafficShare"`
 }
 
-func NewBenchmarkResult(backends []*backend.Backend) (*BenchmarkResult, error) {
-	result := &BenchmarkResult{
+func NewBenchmarkRuntimeSnapshot(backends []*backend.Backend) (*BenchmarkRuntimeSnapshot, error) {
+	result := &BenchmarkRuntimeSnapshot{
 		StartedAt: time.Now(),
-		Backends:  make([]BackendBenchmark, len(backends)),
+		Backends:  make([]BackendRuntimeCounters, len(backends)),
 	}
 
 	for index, target := range backends {
 		if target == nil {
 			return nil, fmt.Errorf("backend at index %d is nil", index)
 		}
-		result.Backends[index] = BackendBenchmark{
+		result.Backends[index] = BackendRuntimeCounters{
 			BackendIndex: index,
 			URL:          target.URL,
 		}
@@ -53,14 +53,14 @@ func NewBenchmarkResult(backends []*backend.Backend) (*BenchmarkResult, error) {
 	return result, nil
 }
 
-func (b *BenchmarkResult) validateIndex(index int) error {
+func (b *BenchmarkRuntimeSnapshot) validateIndex(index int) error {
 	if index < 0 || index >= len(b.Backends) {
 		return fmt.Errorf("backend index %d is out of range", index)
 	}
 	return nil
 }
 
-func (b *BenchmarkResult) RecordSelected(index int) error {
+func (b *BenchmarkRuntimeSnapshot) RecordSelected(index int) error {
 	if err := b.validateIndex(index); err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (b *BenchmarkResult) RecordSelected(index int) error {
 	return nil
 }
 
-func (b *BenchmarkResult) RecordCompleted(index int, latency time.Duration) error {
+func (b *BenchmarkRuntimeSnapshot) RecordCompleted(index int, latency time.Duration) error {
 	if err := b.validateIndex(index); err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (b *BenchmarkResult) RecordCompleted(index int, latency time.Duration) erro
 	return nil
 }
 
-func (b *BenchmarkResult) RecordError(index int) error {
+func (b *BenchmarkRuntimeSnapshot) RecordError(index int) error {
 	if err := b.validateIndex(index); err != nil {
 		return err
 	}
@@ -91,15 +91,15 @@ func (b *BenchmarkResult) RecordError(index int) error {
 	return nil
 }
 
-func (b *BenchmarkResult) CaptureSnapshot() BenchmarkResult {
-	snapshot := BenchmarkResult{
+func (b *BenchmarkRuntimeSnapshot) CaptureSnapshot() BenchmarkRuntimeSnapshot {
+	snapshot := BenchmarkRuntimeSnapshot{
 		StartedAt: b.StartedAt,
-		Backends:  make([]BackendBenchmark, len(b.Backends)),
+		Backends:  make([]BackendRuntimeCounters, len(b.Backends)),
 	}
 
 	for i := range b.Backends {
 		current := &b.Backends[i]
-		copy := BackendBenchmark{
+		copy := BackendRuntimeCounters{
 			BackendIndex: current.BackendIndex,
 			URL:          current.URL,
 		}
@@ -115,8 +115,8 @@ func (b *BenchmarkResult) CaptureSnapshot() BenchmarkResult {
 	return snapshot
 }
 
-func (b *BenchmarkResult) Difference(old BenchmarkResult) []BackendStats {
-	stats := make([]BackendStats, len(b.Backends))
+func (b *BenchmarkRuntimeSnapshot) Difference(old BenchmarkRuntimeSnapshot) []BackendBenchmarkStats {
+	stats := make([]BackendBenchmarkStats, len(b.Backends))
 	totalSelected := uint64(0)
 
 	for i := range b.Backends {
@@ -126,7 +126,7 @@ func (b *BenchmarkResult) Difference(old BenchmarkResult) []BackendStats {
 		completed := current.CompletedRequests.Load() - previous.CompletedRequests.Load()
 		latencyNs := current.TotalLatencyNs.Load() - previous.TotalLatencyNs.Load()
 
-		stats[i] = BackendStats{
+		stats[i] = BackendBenchmarkStats{
 			BackendIndex:      current.BackendIndex,
 			URL:               current.URL,
 			SelectedRequests:  selected,
