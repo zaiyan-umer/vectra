@@ -1,4 +1,4 @@
-package handlers
+package benchmark
 
 import (
 	"database/sql"
@@ -7,15 +7,15 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 )
 
-type BenchmarkDAL struct {
+type Repository struct {
 	db *sql.DB
 }
 
-func NewBenchmarkDAL(db *sql.DB) *BenchmarkDAL {
-	return &BenchmarkDAL{db: db}
+func NewRepository(db *sql.DB) *Repository {
+	return &Repository{db: db}
 }
 
-func (d *BenchmarkDAL) CreateBenchmark(request metrics.BenchmarkRequest, targetURL string) (string, error) {
+func (d *Repository) CreateBenchmark(request metrics.BenchmarkRequest, targetURL string) (string, error) {
 	var benchmarkID string
 	err := d.db.QueryRow(`
 		INSERT INTO benchmarks (
@@ -33,7 +33,7 @@ func (d *BenchmarkDAL) CreateBenchmark(request metrics.BenchmarkRequest, targetU
 	return benchmarkID, err
 }
 
-func (d *BenchmarkDAL) GetBenchmarks() ([]BenchmarkRecord, error) {
+func (d *Repository) GetBenchmarks() ([]BenchmarkRecord, error) {
 	rows, err := d.db.Query(`
 		SELECT id, status, duration_seconds, connections, algorithm,
 			target_url, started_at, finished_at, error, created_at
@@ -88,7 +88,7 @@ func (d *BenchmarkDAL) GetBenchmarks() ([]BenchmarkRecord, error) {
 	return benchmarks, nil
 }
 
-func (d *BenchmarkDAL) GetBenchmark(id string) (*BenchmarkDetailRecord, error) {
+func (d *Repository) GetBenchmark(id string) (*BenchmarkDetailRecord, error) {
 	row := d.db.QueryRow(`
 		SELECT
 			b.id,
@@ -152,7 +152,7 @@ func (d *BenchmarkDAL) GetBenchmark(id string) (*BenchmarkDetailRecord, error) {
 	return &benchmark, nil
 }
 
-func (d *BenchmarkDAL) DeleteBenchmark(id string) (bool, error) {
+func (d *Repository) DeleteBenchmark(id string) (bool, error) {
 	result, err := d.db.Exec(`DELETE FROM benchmarks WHERE id = $1`, id)
 	if err != nil {
 		return false, err

@@ -6,17 +6,18 @@ import (
 	"log"
 	"net/http"
 
+	benchmarkpkg "github.com/zaiyan-umer/vectra/app/internal/benchmark"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
 	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 )
 
 type Handler struct {
-	result *metrics.BenchmarkRuntimeSnapshot
-	dal    *BenchmarkDAL
+	result     *metrics.BenchmarkRuntimeSnapshot
+	repository *benchmarkpkg.Repository
 }
 
 func NewHandler(result *metrics.BenchmarkRuntimeSnapshot, db *sql.DB) *Handler {
-	return &Handler{result: result, dal: NewBenchmarkDAL(db)}
+	return &Handler{result: result, repository: benchmarkpkg.NewRepository(db)}
 }
 
 func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +42,7 @@ func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
 
 	targetURL := "http://" + cfg.Port + "/health"
 
-	benchmarkID, err := h.dal.CreateBenchmark(request, targetURL)
+	benchmarkID, err := h.repository.CreateBenchmark(request, targetURL)
 	if err != nil {
 		log.Printf("db.query: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -61,7 +62,7 @@ func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetBenchmarks(w http.ResponseWriter, r *http.Request) {
-	benchmarks, err := h.dal.GetBenchmarks()
+	benchmarks, err := h.repository.GetBenchmarks()
 	if err != nil {
 		log.Printf("db.query: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -77,7 +78,7 @@ func (h *Handler) GetBenchmarks(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetBenchmark(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	benchmark, err := h.dal.GetBenchmark(id)
+	benchmark, err := h.repository.GetBenchmark(id)
 	if err == sql.ErrNoRows {
 		http.Error(w, "benchmark not found", http.StatusNotFound)
 		return
@@ -97,7 +98,7 @@ func (h *Handler) GetBenchmark(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteBenchmark(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	deleted, err := h.dal.DeleteBenchmark(id)
+	deleted, err := h.repository.DeleteBenchmark(id)
 	if err != nil {
 		log.Printf("delete: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
