@@ -4,7 +4,7 @@ build:
 	@go -C app build -o bin/api ./cmd/loadbalancer
 
 run: build
-	@./app/bin/api
+	@cd app && ./bin/api
 
 test:
 	@go -C app test ./...
