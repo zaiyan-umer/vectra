@@ -40,7 +40,7 @@ func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetURL := "http://" + cfg.Port + "/health"
+	targetURL := "http://localhost:" + cfg.Port + "/health"
 
 	benchmarkID, err := h.repository.CreateBenchmark(request, targetURL)
 	if err != nil {

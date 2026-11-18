@@ -27,3 +27,12 @@ type BenchmarkDetailRecord struct {
 	BenchmarkRecord
 	Result *BenchmarkResultRecord `json:"result,omitempty"`
 }
+
+type BenchmarkJob struct {
+    ID              string
+    Status          string
+    DurationSeconds int
+    Connections     int
+    Algorithm       string
+    TargetURL       string
+}

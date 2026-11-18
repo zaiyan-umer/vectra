@@ -5,10 +5,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
+	"github.com/zaiyan-umer/vectra/app/internal/benchmark"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
 	"github.com/zaiyan-umer/vectra/app/internal/db"
 	"github.com/zaiyan-umer/vectra/app/internal/handlers"
@@ -32,12 +32,7 @@ func main() {
 		log.Fatalf("main.selector.New: %v", err)
 	}
 
-	dbUrl := os.Getenv("DATABASE_URL")
-	if dbUrl == "" {
-		log.Fatalf("main.os.Getenv: DATABASE_URL is required.")
-	}
-
-	dbConnection, err := db.Connect(dbUrl)
+	dbConnection, err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("main.db.Connect: %v", err)
 	}
@@ -51,6 +46,10 @@ func main() {
 			cancel()
 		}
 	}()
+
+	benchmarkRepository := benchmark.NewRepository(dbConnection)
+	benchmarkWorker := benchmark.NewWorker(benchmarkRepository, result)
+	go benchmarkWorker.Run(ctx)
 
 	metricsHandler := handlers.NewHandler(result, dbConnection)
 
