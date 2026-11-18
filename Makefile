@@ -17,3 +17,12 @@ testserver:
 
 testserver-build:
 	@docker compose -f test-server/docker-compose.yml up -d --build
+
+migration-build:
+	@go -C app build -o bin/migrate ./cmd/migrate
+
+migrate-up: migration-build
+	@cd app && ./bin/migrate up
+
+migrate-down: migration-build
+	@cd app && ./bin/migrate down
