@@ -307,17 +307,27 @@
     --color-critical-text: #fecaca;
   }
 
-  /* Font loading via @font-face (self-hosted preferred) */
-  /* Using Google Fonts via preconnect in index.html instead */
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    font-family: var(--font-inter);
-  }
+/* Font loading via @font-face (self-hosted preferred) */
+/* Using Google Fonts via preconnect in index.html instead */
+
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+* {
+  @apply border-border outline-ring/50;
+}
+body {
+  @apply bg-background text-foreground;
+}
+html {
+  font-family: var(--font-inter);
+}
 }
 
 @layer utilities {
