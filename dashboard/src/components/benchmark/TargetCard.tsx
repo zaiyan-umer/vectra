@@ -1,3 +1,4 @@
+import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import type { BackendTarget } from "@/types/backend"
@@ -13,7 +14,7 @@ const STATUS_BADGE = {
   down: "badge-critical",
 } as const
 
-export function TargetCard({ target, className }: TargetCardProps) {
+export const TargetCard = React.memo(function TargetCard({ target, className }: TargetCardProps) {
   const statusClass = STATUS_BADGE[target.status] || "badge-healthy"
 
   return (
@@ -44,4 +45,4 @@ export function TargetCard({ target, className }: TargetCardProps) {
       </div>
     </div>
   )
-}
+})

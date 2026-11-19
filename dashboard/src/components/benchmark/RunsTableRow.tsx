@@ -1,14 +1,9 @@
+import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 import { formatTimestamp, formatLatency, formatThroughput, formatPercent } from "@/utils/format"
 import type { BenchmarkRun, RunStatus } from "@/types/benchmark"
 import { Badge } from "@/components/ui/badge"
-
-interface RunsTableRowProps {
-  run: BenchmarkRun
-  isSelected: boolean
-  onSelect: () => void
-}
 
 const STATUS_BADGE_CLASS: Record<RunStatus, "secondary" | "destructive" | "outline"> = {
   running: "secondary",
@@ -31,7 +26,11 @@ const ALGORITHM_LABELS: Record<BenchmarkRun["algorithm"], string> = {
   weighted: "Weighted",
 }
 
-export function RunsTableRow({ run, isSelected, onSelect }: RunsTableRowProps) {
+export const RunsTableRow = React.memo(function RunsTableRow({ run, isSelected, onSelect }: {
+  run: BenchmarkRun
+  isSelected: boolean
+  onSelect: () => void
+}) {
   const statusClass = STATUS_BADGE_CLASS[run.status]
 
   return (
@@ -94,4 +93,4 @@ export function RunsTableRow({ run, isSelected, onSelect }: RunsTableRowProps) {
       </td>
     </tr>
   )
-}
+})

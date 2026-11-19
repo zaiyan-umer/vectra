@@ -1,3 +1,4 @@
+import * as React from "react"
 import { cn } from "@/lib/utils"
 import { generateSparklinePath } from "@/utils/sparkline"
 
@@ -9,7 +10,7 @@ interface SparklineProps {
   height?: number
 }
 
-export function Sparkline({ data, color, className, width = 100, height = 24 }: SparklineProps) {
+export const Sparkline = React.memo(function Sparkline({ data, color, className, width = 100, height = 24 }: SparklineProps) {
   const path = generateSparklinePath(data, width, height)
 
   return (
@@ -39,4 +40,4 @@ export function Sparkline({ data, color, className, width = 100, height = 24 }: 
       />
     </svg>
   )
-}
+})

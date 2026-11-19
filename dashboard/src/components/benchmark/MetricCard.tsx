@@ -1,3 +1,4 @@
+import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Sparkline } from "./Sparkline"
 import type { MetricCardData } from "@/types/benchmark"
@@ -8,7 +9,7 @@ const DELTA_STYLE = {
   neutral: "text-on-surface-variant",
 } as const
 
-export function MetricCard({ data, className }: { data: MetricCardData; className?: string }) {
+export const MetricCard = React.memo(function MetricCard({ data, className }: { data: MetricCardData; className?: string }) {
   return (
     <div className={cn("telemetry-card", className)}>
       <div className="flex items-start justify-between mb-space-xs">
@@ -30,4 +31,4 @@ export function MetricCard({ data, className }: { data: MetricCardData; classNam
       <p className="mt-space-xs font-label-caps text-on-surface-variant">{data.footerLeft}</p>
     </div>
   )
-}
+})
