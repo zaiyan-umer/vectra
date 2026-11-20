@@ -48,11 +48,24 @@ func MustLoad() Config {
 
 	targetURLs := makeTargetUrls(rawURLs)
 
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	var corsAllowedOrigins []string
+	if corsOrigins != "" {
+		for _, o := range strings.Split(corsOrigins, ",") {
+			if trimmed := strings.TrimSpace(o); trimmed != "" {
+				corsAllowedOrigins = append(corsAllowedOrigins, trimmed)
+			}
+		}
+	} else {
+		corsAllowedOrigins = []string{"http://localhost:5173"}
+	}
+
 	return Config{
 		Port: port,
 		DatabaseURL: db_url,
 		Algorithm: parsedAlgo,
 		TargetURLs: targetURLs,
+		CORSAllowedOrigins: corsAllowedOrigins,
 	}
 }
 

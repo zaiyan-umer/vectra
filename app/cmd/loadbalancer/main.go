@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/cors"
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/benchmark"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
@@ -61,9 +62,18 @@ func main() {
 	mux.HandleFunc("DELETE /benchmarks/{id}", metricsHandler.DeleteBenchmark)
 	mux.Handle("/", proxy)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   cfg.CORSAllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(mux)
+
 	httpServer := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,

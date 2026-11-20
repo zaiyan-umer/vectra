@@ -7,6 +7,7 @@ type Config struct {
     DatabaseURL string
 	Algorithm  string
 	TargetURLs []string
+	CORSAllowedOrigins []string
 }
 
 type AdaptiveConfig struct {
