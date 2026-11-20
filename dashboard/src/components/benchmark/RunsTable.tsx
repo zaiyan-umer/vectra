@@ -3,15 +3,17 @@ import type { BenchmarkRun } from "@/types/benchmark"
 import { RunsTableRow } from "./RunsTableRow"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 interface RunsTableProps {
   runs: BenchmarkRun[]
-  selectedRunId?: number
-  onSelectRun: (id: number) => void
+  selectedRunId?: string
+  onSelectRun: (id: string) => void
   onPageChange?: (page: number) => void
   currentPage?: number
   totalPages?: number
   className?: string
+  isLoading?: boolean
 }
 
 const ROWS_PER_PAGE = 10
@@ -24,8 +26,20 @@ export function RunsTable({
   currentPage = 1,
   totalPages = 1,
   className,
+  isLoading = false,
 }: RunsTableProps) {
   const paginatedRuns = runs.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
+
+  if (isLoading && runs.length === 0) {
+    return (
+      <div className={cn("surface-card overflow-hidden", className)}>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 font-body-sm text-on-surface-variant">Loading runs...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn("surface-card overflow-hidden", className)}>
@@ -52,6 +66,13 @@ export function RunsTable({
                 onSelect={() => onSelectRun(run.id)}
               />
             ))}
+            {paginatedRuns.length === 0 && !isLoading && (
+              <tr>
+                <td colSpan={8} className="px-space-md py-space-lg text-center text-on-surface-variant">
+                  No runs found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

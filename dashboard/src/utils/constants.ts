@@ -14,6 +14,13 @@ export const ALGORITHM_LABELS: Record<Algorithm, string> = {
   weighted: "Weighted",
 };
 
+export const API_ALGORITHM_LABELS: Record<string, string> = {
+  adaptive_selection: "Adaptive Selection",
+  round_robin: "Round Robin",
+  least_conn: "Least Connections",
+  weighted: "Weighted Response",
+};
+
 export const STATUS_LABELS: Record<RunStatus, string> = {
   running: "Running",
   completed: "Completed",
@@ -21,7 +28,23 @@ export const STATUS_LABELS: Record<RunStatus, string> = {
   canceled: "Canceled",
 };
 
+export const API_STATUS_LABELS: Record<string, string> = {
+  queued: "Queued",
+  running: "Running",
+  completed: "Completed",
+  failed: "Failed",
+  canceled: "Canceled",
+};
+
 export const STATUS_BADGE_CLASS: Record<RunStatus, string> = {
+  running: "badge-degraded",
+  completed: "badge-healthy",
+  failed: "badge-critical",
+  canceled: "badge-degraded",
+};
+
+export const API_STATUS_BADGE_CLASS: Record<string, string> = {
+  queued: "badge-degraded",
   running: "badge-degraded",
   completed: "badge-healthy",
   failed: "badge-critical",
@@ -52,7 +75,3 @@ export const CHART_COLORS = {
 export const DURATION_PRESETS = [10, 30, 60, 120] as const;
 
 export const CONCURRENCY_PRESETS = [10, 25, 50, 100, 250] as const;
-
-export const PIPELINING_MIN = 1;
-export const PIPELINING_MAX = 10;
-export const PIPELINING_DEFAULT = 1;

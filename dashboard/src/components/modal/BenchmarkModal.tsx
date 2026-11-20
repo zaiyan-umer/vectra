@@ -3,33 +3,27 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
-import { DURATION_PRESETS, CONCURRENCY_PRESETS, PIPELINING_MIN, PIPELINING_MAX, PIPELINING_DEFAULT } from "@/utils/constants"
+import { DURATION_PRESETS, CONCURRENCY_PRESETS } from "@/utils/constants"
 
 interface BenchmarkModalProps {
   isOpen: boolean
   onClose: () => void
   onStart: (config: {
-    duration: number
-    concurrency: number
-    pipelining: number
+    durationSeconds: number
+    connections: number
   }) => void
 }
 
 export function BenchmarkModal({ isOpen, onClose, onStart }: BenchmarkModalProps) {
   const [duration, setDuration] = useState(30)
   const [concurrency, setConcurrency] = useState(100)
-  const [pipelining, setPipelining] = useState(PIPELINING_DEFAULT)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
     if (!duration || duration < 1) newErrors.duration = "Duration must be at least 1 second"
     if (!concurrency || concurrency < 1) newErrors.concurrency = "Concurrency must be at least 1"
-    if (pipelining < PIPELINING_MIN || pipelining > PIPELINING_MAX) {
-      newErrors.pipelining = `Pipelining must be between ${PIPELINING_MIN} and ${PIPELINING_MAX}`
-    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -37,12 +31,12 @@ export function BenchmarkModal({ isOpen, onClose, onStart }: BenchmarkModalProps
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (validate()) {
-      onStart({ duration, concurrency, pipelining })
+      onStart({ durationSeconds: duration, connections: concurrency })
       onClose()
     }
   }
 
-  const isValid = duration > 0 && concurrency > 0 && pipelining >= PIPELINING_MIN && pipelining <= PIPELINING_MAX
+  const isValid = duration > 0 && concurrency > 0
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -147,31 +141,7 @@ export function BenchmarkModal({ isOpen, onClose, onStart }: BenchmarkModalProps
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <Label htmlFor="pipelining" className="font-label-caps mb-0">
-                    Pipelining Factor
-                  </Label>
-                  <span className="font-code-sm text-on-surface-variant">{pipelining}</span>
-                </div>
-                <Slider
-                  id="pipelining"
-                  min={PIPELINING_MIN}
-                  max={PIPELINING_MAX}
-                  step={1}
-                  value={[pipelining]}
-                  onValueChange={([val]) => setPipelining(val)}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-on-surface-variant mt-1">
-                  <span>{PIPELINING_MIN}</span>
-                  <span>{PIPELINING_MAX}</span>
-                </div>
-                {errors.pipelining && (
-                  <p className="font-label-caps text-critical mt-1">{errors.pipelining}</p>
-                )}
               </div>
-            </div>
           </div>
 
           <DialogFooter className="flex justify-end gap-2">

@@ -7,7 +7,6 @@ interface BenchmarkModalState {
   formData: {
     duration: number
     concurrency: number
-    pipelining: number
   }
   setFormData: (data: Partial<BenchmarkModalState["formData"]>) => void
   resetForm: () => void
@@ -16,7 +15,6 @@ interface BenchmarkModalState {
 const DEFAULT_FORM_DATA = {
   duration: 30,
   concurrency: 100,
-  pipelining: 1,
 }
 
 export const useBenchmarkModal = create<BenchmarkModalState>((set) => ({

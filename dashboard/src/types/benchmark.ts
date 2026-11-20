@@ -3,13 +3,12 @@ export type Algorithm = "adaptive" | "round_robin" | "least_conn" | "weighted";
 export type RunStatus = "running" | "completed" | "failed" | "canceled";
 
 export interface BenchmarkRun {
-  id: number;
+  id: string;
   timestamp: string;
   status: RunStatus;
   algorithm: Algorithm;
   durationSeconds: number;
   connections: number;
-  pipelining: number;
   throughput: number;
   avgLatency: number;
   p99: number;
@@ -37,6 +36,9 @@ export interface BenchmarkRun {
     requests: number;
     percent: number;
   }[];
+  targetUrl?: string;
+  createdAt?: string;
+  error?: string | null;
 }
 
 export interface MetricCardData {

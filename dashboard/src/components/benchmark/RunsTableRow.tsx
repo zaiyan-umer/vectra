@@ -2,29 +2,9 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 import { formatTimestamp, formatLatency, formatThroughput, formatPercent } from "@/utils/format"
-import type { BenchmarkRun, RunStatus } from "@/types/benchmark"
+import type { BenchmarkRun } from "@/types/benchmark"
 import { Badge } from "@/components/ui/badge"
-
-const STATUS_BADGE_CLASS: Record<RunStatus, "secondary" | "destructive" | "outline"> = {
-  running: "secondary",
-  completed: "secondary",
-  failed: "destructive",
-  canceled: "outline",
-}
-
-const STATUS_LABELS: Record<RunStatus, string> = {
-  running: "Running",
-  completed: "Completed",
-  failed: "Failed",
-  canceled: "Canceled",
-}
-
-const ALGORITHM_LABELS: Record<BenchmarkRun["algorithm"], string> = {
-  adaptive: "Adaptive",
-  round_robin: "Round Robin",
-  least_conn: "Least Conn",
-  weighted: "Weighted",
-}
+import { STATUS_BADGE_CLASS, STATUS_LABELS, ALGORITHM_LABELS } from "@/utils/constants"
 
 export const RunsTableRow = React.memo(function RunsTableRow({ run, isSelected, onSelect }: {
   run: BenchmarkRun
@@ -51,11 +31,11 @@ export const RunsTableRow = React.memo(function RunsTableRow({ run, isSelected, 
       aria-selected={isSelected}
     >
       <td className="px-space-md py-space-xs">
-        <div className="font-code-sm text-on-surface">#{run.id}</div>
+        <div className="font-code-sm text-on-surface">{run.id.slice(0, 8)}</div>
         <div className="font-body-sm text-on-surface-variant">{formatTimestamp(run.timestamp)}</div>
       </td>
       <td className="px-space-md py-space-xs">
-        <Badge variant={statusClass} className="gap-1">
+        <Badge variant={statusClass as "default" | "link" | "secondary" | "destructive" | "outline" | "ghost"} className="gap-1">
           <span className={cn(
             "relative flex h-1.5 w-1.5 rounded-full animate-pulse",
             run.status === "running" && "bg-degraded",
@@ -71,7 +51,7 @@ export const RunsTableRow = React.memo(function RunsTableRow({ run, isSelected, 
       </td>
       <td className="px-space-md py-space-xs">
         <span className="font-code-sm text-on-surface-variant">
-          {run.durationSeconds}s • {run.connections}c • {run.pipelining}p
+          {run.durationSeconds}s • {run.connections}c
         </span>
       </td>
       <td className="px-space-md py-space-xs text-right">
@@ -83,7 +63,7 @@ export const RunsTableRow = React.memo(function RunsTableRow({ run, isSelected, 
       </td>
       <td className="px-space-md py-space-xs text-right">
         <span className="font-code-sm text-on-surface">{run.errors}</span>
-        <span className="font-label-caps text-on-surface-variant ml-1">({formatPercent(run.errorRate * 100, 2)})</span>
+        <span className="font-label-caps text-on-surface-variant ml-1">({formatPercent(run.errorRate, 2)})</span>
       </td>
       <td className="px-space-md py-space-xs text-center">
         <ChevronRight className={cn(
