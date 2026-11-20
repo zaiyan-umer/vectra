@@ -33,22 +33,25 @@ function CountBadge({ count, isActive }: { count: number; isActive: boolean }) {
 export function AlgorithmTabs({ activeTab, onTabChange, counts, className }: AlgorithmTabsProps) {
   return (
     <div className={cn("flex flex-wrap gap-1.5", className)} role="tablist">
-      {TABS.map((tab) => (
-        <Button
-          key={tab.id}
-          role="tab"
-          aria-selected={activeTab === tab.id}
-          variant={activeTab === tab.id ? "default" : "outline"}
-          size="sm"
-          onClick={() => onTabChange(tab.id)}
-          className={cn("h-7 px-3 text-body-sm font-medium")}
-        >
-          {tab.label}
-          {counts && counts[tab.id] !== undefined && (
-            <CountBadge count={counts[tab.id]} isActive={activeTab === tab.id} />
-          )}
-        </Button>
-      ))}
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id
+        return (
+          <Button
+            key={tab.id}
+            role="tab"
+            aria-selected={isActive}
+            variant={isActive ? "default" : "outline"}
+            size="sm"
+            onClick={() => onTabChange(tab.id)}
+            className={cn("cursor-pointer h-7 px-3 text-body-sm font-medium", isActive && "text-white")}
+          >
+            {tab.label}
+            {counts && counts[tab.id] !== undefined && (
+              <CountBadge count={counts[tab.id]} isActive={isActive} />
+            )}
+          </Button>
+        )
+      })}
     </div>
   )
 }

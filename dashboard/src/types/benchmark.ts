@@ -31,8 +31,7 @@ export interface BenchmarkRun {
     timeouts: number;
   };
   backendAllocation: {
-    name: string;
-    port: number;
+    url: string;
     requests: number;
     percent: number;
   }[];

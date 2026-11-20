@@ -2,8 +2,7 @@ import { cn } from "@/lib/utils"
 import type { BenchmarkRun } from "@/types/benchmark"
 import { RunsTableRow } from "./RunsTableRow"
 import { Button } from "@/components/ui/button"
-import { ChevronRight } from "lucide-react"
-import { Loader2 } from "lucide-react"
+import { ChevronRight, Loader2 } from "lucide-react"
 
 interface RunsTableProps {
   runs: BenchmarkRun[]
@@ -51,10 +50,6 @@ export function RunsTable({
               <th className="table-header px-space-md text-left">Status</th>
               <th className="table-header px-space-md text-left">Algorithm</th>
               <th className="table-header px-space-md text-left">Load Config</th>
-              <th className="table-header px-space-md text-right">Throughput</th>
-              <th className="table-header px-space-md text-right">P99</th>
-              <th className="table-header px-space-md text-right">Errors</th>
-              <th className="table-header px-space-md text-center">Inspect</th>
             </tr>
           </thead>
           <tbody>
@@ -68,7 +63,7 @@ export function RunsTable({
             ))}
             {paginatedRuns.length === 0 && !isLoading && (
               <tr>
-                <td colSpan={8} className="px-space-md py-space-lg text-center text-on-surface-variant">
+                <td colSpan={4} className="px-space-md py-space-lg text-center text-on-surface-variant">
                   No runs found
                 </td>
               </tr>

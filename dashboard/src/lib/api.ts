@@ -4,6 +4,11 @@ import type {
   ApiBenchmarkDetail,
   ApiBenchmarkStatus,
   ApiAlgorithm,
+  ApiAutocannonResult,
+  MetricsResponse,
+  ConfigResponse,
+  BackendsResponse,
+  HealthResponse,
 } from '@/types/api';
 import type { BenchmarkRun } from '@/types/benchmark';
 
@@ -24,9 +29,29 @@ const ALGORITHM_MAP: Record<ApiAlgorithm, BenchmarkRun['algorithm']> = {
   weighted: 'weighted',
 };
 
+function getNumericValue(value: number | { count: number } | undefined): number {
+  if (value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object' && value !== null && 'count' in value) {
+    return value.count;
+  }
+  return 0;
+}
+
+function aggregateStatusCodes(autocannon: ApiAutocannonResult) {
+  const ok2xx = getNumericValue(autocannon['2xx']) ?? 0;
+  const err5xx = getNumericValue(autocannon['5xx']) ?? 0;
+
+  return { ok2xx, err5xx };
+}
+
 function transformBenchmark(api: ApiBenchmarkDetail): BenchmarkRun {
   const autocannon = api.result?.autocannon;
   const routing = api.result?.routing ?? [];
+
+  const { ok2xx, err5xx } = autocannon
+    ? aggregateStatusCodes(autocannon)
+    : { ok2xx: 0, err5xx: 0 };
 
   return {
     id: api.id,
@@ -54,15 +79,14 @@ function transformBenchmark(api: ApiBenchmarkDetail): BenchmarkRun {
       max: autocannon?.latency?.max ?? 0,
     },
     statusBreakdown: {
-      ok2xx: autocannon?.statusCodeStats?.['2xx'] ?? 0,
-      err5xx: autocannon?.statusCodeStats?.['5xx'] ?? 0,
-      timeouts: autocannon?.statusCodeStats?.timeouts ?? 0,
+      ok2xx,
+      err5xx,
+      timeouts: autocannon?.timeouts ?? 0,
     },
     backendAllocation: routing.map((r) => ({
-      name: r.backend,
-      port: r.port,
+      url: r.url,
       requests: r.assignedRequests,
-      percent: r.trafficShare * 100,
+      percent: r.trafficShare,
     })),
     targetUrl: api.targetUrl,
     createdAt: api.createdAt,
@@ -99,6 +123,22 @@ export async function getBenchmark(id: string): Promise<ApiBenchmarkDetail> {
 
 export async function getBenchmarks(): Promise<ApiBenchmarkDetail[]> {
   return fetchJson<ApiBenchmarkDetail[]>('/benchmarks');
+}
+
+export async function getMetrics(): Promise<MetricsResponse> {
+  return fetchJson<MetricsResponse>('/metrics');
+}
+
+export async function getConfig(): Promise<ConfigResponse> {
+  return fetchJson<ConfigResponse>('/config');
+}
+
+export async function getBackends(): Promise<BackendsResponse> {
+  return fetchJson<BackendsResponse>('/backends');
+}
+
+export async function getBackendsHealth(): Promise<HealthResponse> {
+  return fetchJson<HealthResponse>('/backends/health');
 }
 
 export { transformBenchmark, STATUS_MAP, ALGORITHM_MAP };

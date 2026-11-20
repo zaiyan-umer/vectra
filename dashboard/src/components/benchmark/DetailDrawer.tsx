@@ -28,7 +28,7 @@ export function DetailDrawer({ run, isOpen, onClose, isMobile, isLoading = false
           "surface-card",
           isMobile
             ? "fixed inset-y-0 right-0 w-full max-w-md z-50 animate-slide-in"
-            : "xl:col-span-5"
+            : "xl:col-span-7"
         )}
       >
         <div className="flex h-full items-center justify-center">
@@ -44,7 +44,7 @@ export function DetailDrawer({ run, isOpen, onClose, isMobile, isLoading = false
         "surface-card flex flex-col",
         isMobile
           ? "fixed inset-y-0 right-0 w-full max-w-md z-50 animate-slide-in"
-          : "xl:col-span-5"
+          : "xl:col-span-7"
       )}>
         <div className="flex items-center justify-between px-space-md py-space-sm border-b border-border/50">
           <div className="flex items-center gap-space-sm">
@@ -140,7 +140,7 @@ export function DetailDrawer({ run, isOpen, onClose, isMobile, isLoading = false
   }
 
   return (
-    <aside className={cn("surface-card xl:col-span-5 flex flex-col", className)}>
+    <aside className={cn("surface-card xl:col-span-7 flex flex-col", className)}>
       {content}
     </aside>
   )

@@ -1,21 +1,19 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import type { BackendTarget } from "@/types/backend"
+import type { BackendDetail } from "@/types/api"
+import { formatLatency, formatRPS, formatErrorRate } from "@/utils/format"
 
 interface TargetCardProps {
-  target: BackendTarget
+  target: BackendDetail
   className?: string
 }
 
-const STATUS_BADGE = {
-  healthy: "badge-healthy",
-  degraded: "badge-degraded",
-  down: "badge-critical",
-} as const
-
 export const TargetCard = React.memo(function TargetCard({ target, className }: TargetCardProps) {
-  const statusClass = STATUS_BADGE[target.status] || "badge-healthy"
+  const statusClass = target.healthy ? "badge-healthy" : "badge-critical"
+
+  const url = new URL(target.url);
+  const name = url.host;
 
   return (
     <div className={cn("surface-card p-space-md", className)}>
@@ -23,24 +21,33 @@ export const TargetCard = React.memo(function TargetCard({ target, className }: 
         <div className="flex items-center gap-2">
           <span className={cn(
             "relative flex h-2 w-2 rounded-full",
-            target.status === "healthy" && "bg-healthy",
-            target.status === "degraded" && "bg-degraded",
-            target.status === "down" && "bg-critical"
+            target.healthy && "bg-healthy",
+            !target.healthy && "bg-critical"
           )} />
-          <span className="font-code-sm text-on-surface">{target.name}</span>
+          <span className="font-code-sm text-on-surface">{name}</span>
         </div>
         <Badge className={statusClass}>
-          {target.status}
+          {target.healthy ? "healthy" : "down"}
         </Badge>
+      </div>
+      <div className="grid grid-cols-2 gap-space-xs text-body-sm mb-space-sm">
+        <div>
+          <p className="font-label-caps text-on-surface-variant">Latency</p>
+          <p className="font-code-sm text-on-surface">{formatLatency(target.avgLatencyMs)}</p>
+        </div>
+        <div>
+          <p className="font-label-caps text-on-surface-variant">Traffic</p>
+          <p className="font-code-sm text-on-surface">{target.trafficShare.toFixed(1)}%</p>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-space-xs text-body-sm">
         <div>
-          <p className="font-label-caps text-on-surface-variant">Latency</p>
-          <p className="font-code-sm text-on-surface">{target.avgLatency.toFixed(1)}ms</p>
+          <p className="font-label-caps text-on-surface-variant">RPS</p>
+          <p className="font-code-sm text-on-surface">{formatRPS(target.rps)}</p>
         </div>
         <div>
-          <p className="font-label-caps text-on-surface-variant">Weight</p>
-          <p className="font-code-sm text-on-surface">{target.weight}%</p>
+          <p className="font-label-caps text-on-surface-variant">Error Rate</p>
+          <p className="font-code-sm text-on-surface">{formatErrorRate(target.errorRate)}%</p>
         </div>
       </div>
     </div>

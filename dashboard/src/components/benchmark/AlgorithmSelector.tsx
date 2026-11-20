@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import { Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
+import { API_ALGORITHM_LABELS } from "@/utils/constants"
 
 interface AlgorithmSelectorProps {
   algorithm?: string
@@ -9,19 +10,12 @@ interface AlgorithmSelectorProps {
 }
 
 export function AlgorithmSelector({ algorithm = "adaptive", className }: AlgorithmSelectorProps) {
-  const labels: Record<string, string> = {
-    adaptive: "Adaptive Selection",
-    round_robin: "Round Robin",
-    least_conn: "Least Connections",
-    weighted: "Weighted Response",
-  }
-
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="secondary" className={cn("gap-1.5", className)}>
-            {labels[algorithm] || algorithm}
+            {API_ALGORITHM_LABELS[algorithm] || algorithm}
             <Info className="h-3.5 w-3.5 shrink-0 opacity-70" />
           </Badge>
         </TooltipTrigger>

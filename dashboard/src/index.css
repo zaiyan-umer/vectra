@@ -443,6 +443,62 @@ html {
 
   .mx-margin { margin-left: var(--margin); margin-right: var(--margin); }
   .mx-margin-desktop { margin-left: var(--margin-desktop); margin-right: var(--margin-desktop); }
+
+  /* Padding X (left + right) */
+  .px-space-xs { padding-left: var(--space-xs); padding-right: var(--space-xs); }
+  .px-space-sm { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+  .px-space-md { padding-left: var(--space-md); padding-right: var(--space-md); }
+  .px-space-lg { padding-left: var(--space-lg); padding-right: var(--space-lg); }
+  .px-space-xl { padding-left: var(--space-xl); padding-right: var(--space-xl); }
+
+  /* Margin X (left + right) */
+  .mx-space-xs { margin-left: var(--space-xs); margin-right: var(--space-xs); }
+  .mx-space-sm { margin-left: var(--space-sm); margin-right: var(--space-sm); }
+  .mx-space-md { margin-left: var(--space-md); margin-right: var(--space-md); }
+  .mx-space-lg { margin-left: var(--space-lg); margin-right: var(--space-lg); }
+  .mx-space-xl { margin-left: var(--space-xl); margin-right: var(--space-xl); }
+
+  /* Gap utilities */
+  .gap-space-xs { gap: var(--space-xs); }
+  .gap-space-sm { gap: var(--space-sm); }
+  .gap-space-md { gap: var(--space-md); }
+  .gap-space-lg { gap: var(--space-lg); }
+  .gap-space-xl { gap: var(--space-xl); }
+
+  /* Margin bottom */
+  .mb-space-xs { margin-bottom: var(--space-xs); }
+  .mb-space-sm { margin-bottom: var(--space-sm); }
+  .mb-space-md { margin-bottom: var(--space-md); }
+  .mb-space-lg { margin-bottom: var(--space-lg); }
+  .mb-space-xl { margin-bottom: var(--space-xl); }
+
+  /* Padding Y (top + bottom) */
+  .py-space-xs { padding-top: var(--space-xs); padding-bottom: var(--space-xs); }
+  .py-space-sm { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+  .py-space-md { padding-top: var(--space-md); padding-bottom: var(--space-md); }
+  .py-space-lg { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }
+  .py-space-xl { padding-top: var(--space-xl); padding-bottom: var(--space-xl); }
+
+  /* Margin top */
+  .mt-space-xs { margin-top: var(--space-xs); }
+  .mt-space-sm { margin-top: var(--space-sm); }
+  .mt-space-md { margin-top: var(--space-md); }
+  .mt-space-lg { margin-top: var(--space-lg); }
+  .mt-space-xl { margin-top: var(--space-xl); }
+
+  /* Space Y (gap between children) */
+  .space-y-space-xs > * + * { margin-top: var(--space-xs); }
+  .space-y-space-sm > * + * { margin-top: var(--space-sm); }
+  .space-y-space-md > * + * { margin-top: var(--space-md); }
+  .space-y-space-lg > * + * { margin-top: var(--space-lg); }
+  .space-y-space-xl > * + * { margin-top: var(--space-xl); }
+
+  /* Standard gap utilities for Tailwind compatibility */
+  .gap-xs { gap: var(--space-xs); }
+  .gap-sm { gap: var(--space-sm); }
+  .gap-md { gap: var(--space-md); }
+  .gap-lg { gap: var(--space-lg); }
+  .gap-xl { gap: var(--space-xl); }
 }
 
 @layer components {

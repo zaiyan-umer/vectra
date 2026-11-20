@@ -47,7 +47,9 @@ export interface ApiAutocannonResult {
   errors: number;
   non2xx: number;
   timeouts: number;
-  statusCodeStats: Record<string, number>;
+  statusCodeStats: Record<string, number | { count: number }>;
+  '2xx': number | { count: number };
+  '5xx': number | { count: number };
 }
 
 export interface ApiRoutingEntry {
@@ -56,6 +58,7 @@ export interface ApiRoutingEntry {
   assignedRequests: number;
   trafficShare: number;
   averageLatencyMs: number;
+  url: string;
 }
 
 export interface ApiBenchmarkDetail {
@@ -73,4 +76,91 @@ export interface ApiBenchmarkDetail {
     autocannon: ApiAutocannonResult;
     routing: ApiRoutingEntry[];
   } | null;
+}
+
+export interface BackendSparkline {
+  rps: number[];
+  avgLatencyMs: number[];
+}
+
+export interface SparklineData {
+  timestamps: string[];
+  poolRps: number[];
+  poolErrorRate: number[];
+  poolAvgLatencyMs: number[];
+  backends: Record<string, BackendSparkline>;
+}
+
+export interface PoolMetrics {
+  rps: number;
+  errorRate: number;
+  avgLatencyMs: number;
+}
+
+export interface BackendMetrics {
+  index: number;
+  url: string;
+  healthy: boolean;
+  activeConnections: number;
+  rps: number;
+  errorRate: number;
+  avgLatencyMs: number;
+  trafficShare: number;
+  selectedRequests: number;
+  completedRequests: number;
+  errors: number;
+}
+
+export interface MetricsResponse {
+  pool: PoolMetrics;
+  backends: BackendMetrics[];
+  sparkline: SparklineData;
+}
+
+export interface AdaptiveConfig {
+  maxExpectedConnections: number;
+  latencyTargetMs: number;
+  activeWeight: number;
+  latencyWeight: number;
+  tolerance: number;
+}
+
+export interface ConfigResponse {
+  algorithm: string;
+  targets: string[];
+  healthCheckIntervalSeconds: number;
+  adaptiveConfig: AdaptiveConfig;
+  availableAlgorithms: string[];
+}
+
+export interface BackendDetail {
+  index: number;
+  url: string;
+  healthy: boolean;
+  activeConnections: number;
+  rps: number;
+  errorRate: number;
+  avgLatencyMs: number;
+  trafficShare: number;
+  selectedRequests: number;
+  completedRequests: number;
+  errors: number;
+}
+
+export interface BackendsResponse {
+  backends: BackendDetail[];
+}
+
+export interface BackendHealthStatus {
+  index: number;
+  url: string;
+  healthy: boolean;
+  lastCheck: string;
+  consecutiveFailures: number;
+}
+
+export interface HealthResponse {
+  healthyCount: number;
+  totalCount: number;
+  backends: BackendHealthStatus[];
 }

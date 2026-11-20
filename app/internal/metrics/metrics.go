@@ -298,6 +298,12 @@ func (b *BenchmarkRuntimeSnapshot) GetBackendsMetrics(backends []*backend.Backen
 		latest = b.buffer[(b.cursor-1+len(b.buffer))%len(b.buffer)]
 	}
 
+	// Calculate total selected requests across all backends
+	var totalSelected uint64
+	for i := range b.Backends {
+		totalSelected += b.Backends[i].SelectedRequests.Load()
+	}
+
 	for i := range b.Backends {
 		current := &b.Backends[i]
 		selected := current.SelectedRequests.Load()
@@ -318,8 +324,8 @@ func (b *BenchmarkRuntimeSnapshot) GetBackendsMetrics(backends []*backend.Backen
 			errorRate = bw.ErrorRate
 		}
 
-		if selected > 0 {
-			trafficShare = float64(selected) / float64(selected) * 100
+		if totalSelected > 0 && selected > 0 {
+			trafficShare = float64(selected) / float64(totalSelected) * 100
 		}
 
 		healthy := false

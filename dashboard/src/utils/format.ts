@@ -61,5 +61,28 @@ export function formatBytes(bytes: number): string {
 
 export function formatThroughput(rps: number): string {
   if (rps >= 1000) return `${(rps / 1000).toFixed(1)}k`;
-  return rps.toString();
+  return rps.toFixed(1);
+}
+
+export function formatRPS(rps: number): string {
+  if (rps >= 1000) return `${(rps / 1000).toFixed(1)}k`;
+  if (rps >= 1) return rps.toFixed(1);
+  return rps.toFixed(2);
+}
+
+export function formatErrorRate(rate: number): string {
+  return (rate * 100).toFixed(2);
+}
+
+export function formatRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+
+  if (diffSecs < 60) return `${diffSecs}s ago`;
+  const mins = Math.floor(diffSecs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  return `${hours}h ago`;
 }
