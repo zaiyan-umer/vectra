@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { Plus, Keyboard } from "lucide-react"
+import { Command, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface NewBenchmarkTriggerProps {
@@ -11,12 +11,17 @@ export function NewBenchmarkTrigger({ onClick, className }: NewBenchmarkTriggerP
   return (
     <Button
       onClick={onClick}
-      className={cn("gap-2", className)}
+      className={cn("cursor-pointer gap-2", className)}
     >
       <Plus className="h-4 w-4" />
       <span>New Benchmark</span>
-      <Keyboard className="h-3.5 w-3.5 opacity-60 ml-1" />
-      <span className="font-label-caps opacity-60">⌘K</span>
+      <kbd
+        aria-label="Keyboard shortcut: Command K"
+        className="ml-1 inline-flex items-center gap-0.5 rounded-md border border-primary-foreground/25 bg-primary-foreground/10 px-1.5 py-0.5 font-mono text-sm font-semibold text-primary-foreground shadow-sm"
+      >
+        <Command aria-hidden="true" className="size-4" />
+        <span className="leading-4">K</span>
+      </kbd>
     </Button>
   )
 }

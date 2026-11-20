@@ -1,26 +1,33 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ExternalLink, Loader2, AlertCircle } from "lucide-react"
+import { Loader2, AlertCircle, ExternalLink } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ConfigHighlights } from "./ConfigHighlights"
 import { AutocannonSummary } from "./AutocannonSummary"
 import { LatencyPercentiles } from "./LatencyPercentiles"
 import { BackendAllocation } from "./BackendAllocation"
 import { StatusBreakdown } from "./StatusBreakdown"
-import type { BenchmarkRun } from "@/types/benchmark"
-import { STATUS_BADGE_CLASS, API_ALGORITHM_LABELS } from "@/utils/constants"
+import type { BenchmarkRun, RunStatus } from "@/types/benchmark"
+import { API_ALGORITHM_LABELS } from "@/utils/constants"
+import { formatDateTime } from "@/utils/format"
+
+const STATUS_BADGE_VARIANT: Record<RunStatus, "default" | "secondary" | "destructive" | "outline" | "ghost" | "healthy"> = {
+  completed: "healthy",
+  running: "secondary",
+  failed: "destructive",
+  canceled: "outline",
+};
 
 interface DetailDrawerProps {
   run?: BenchmarkRun
   isOpen: boolean
-  onClose: () => void
   isMobile?: boolean
   isLoading?: boolean
   className?: string
 }
 
-export function DetailDrawer({ run, isOpen, onClose, isMobile, isLoading = false, className }: DetailDrawerProps) {
+export function DetailDrawer({ run, isOpen, isMobile, isLoading = false, className }: DetailDrawerProps) {
   if (!run) {
     return (
       <aside
@@ -61,29 +68,31 @@ export function DetailDrawer({ run, isOpen, onClose, isMobile, isLoading = false
 
   const content = (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-space-md py-space-sm border-b border-border/50">
-        <div className="flex items-center gap-space-sm flex-wrap">
-          <span className="font-code-sm text-on-surface">{run.id.slice(0, 8)}</span>
-          <Badge variant={STATUS_BADGE_CLASS[run.status] as "default" | "link" | "secondary" | "destructive" | "outline" | "ghost"}>
-            {run.status}
-          </Badge>
-          {run.error && (
-            <Badge variant="destructive" className="gap-1">
-              <AlertCircle className="h-3 w-3" />
-              Failed: {run.error}
+      <div className="bg-primary/5 px-space-md py-space-md border-b border-border/50">
+        <div className="flex items-center justify-between flex-wrap gap-space-md">
+          <div className="flex items-center gap-space-sm flex-wrap">
+            <span className="font-headline-md font-bold text-on-surface">
+              Run #{run.id.slice(0, 8)} Details
+            </span>
+          </div>
+          <div className="flex items-center gap-space-md flex-wrap">
+            <span className="font-body-sm text-on-surface-variant">
+              {formatDateTime(run.timestamp)}
+            </span>
+            <Badge variant={STATUS_BADGE_VARIANT[run.status]}>
+              {run.status}
             </Badge>
-          )}
-          <span className="font-body-sm text-on-surface-variant">
-            {API_ALGORITHM_LABELS[run.algorithm] ?? run.algorithm}
-          </span>
+            {run.error && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Failed: {run.error}
+              </Badge>
+            )}
+            <span className="font-body-sm text-on-surface-variant">
+              {API_ALGORITHM_LABELS[run.algorithm] ?? run.algorithm}
+            </span>
+          </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 text-on-surface-variant hover:text-on-surface transition-colors"
-          aria-label="Close drawer"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </button>
       </div>
 
       <ScrollArea className="flex-1">
@@ -111,15 +120,6 @@ export function DetailDrawer({ run, isOpen, onClose, isMobile, isLoading = false
                   {run.targetUrl}
                   <ExternalLink className="h-3 w-3" />
                 </a>
-              </div>
-            </>
-          )}
-          {run.createdAt && (
-            <>
-              <Separator />
-              <div className="p-3 bg-surface-container rounded-lg border border-border/50">
-                <div className="font-label-caps text-on-surface-variant mb-1">Created At</div>
-                <span className="font-code-sm text-on-surface">{run.createdAt}</span>
               </div>
             </>
           )}

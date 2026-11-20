@@ -175,7 +175,6 @@ export function DashboardPage() {
             <DetailDrawer
               run={selectedRun}
               isOpen={!!selectedRun}
-              onClose={() => setSelectedRunId(undefined)}
               isMobile={false}
               isLoading={isLoadingDetail || isLoadingSelectedDetail}
             />

@@ -86,3 +86,21 @@ export function formatRelativeTime(iso: string): string {
   const hours = Math.floor(mins / 60);
   return `${hours}h ago`;
 }
+
+export function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  const dateStr = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const time = date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${dateStr}, ${time}`;
+}
+
+export function formatDurationDetail(seconds: number): string {
+  return `Duration ${seconds.toFixed(2)}s`;
+}
