@@ -14,6 +14,10 @@ type Backend struct {
 
 	activeConnections atomic.Int64
 	responseTime atomic.Int64
+
+	lastCheckMu sync.RWMutex
+	lastCheck time.Time
+	consecutiveFailures int
 }
 
 func Targets(targetURLs []string) []*Backend {
@@ -71,4 +75,34 @@ func (b *Backend) UpdateResponseTime(sample time.Duration, alpha float64) {
             return
         }
     }
+}
+
+func (b *Backend) LastCheck() time.Time {
+	b.lastCheckMu.RLock()
+	defer b.lastCheckMu.RUnlock()
+	return b.lastCheck
+}
+
+func (b *Backend) SetLastCheck(t time.Time) {
+	b.lastCheckMu.Lock()
+	defer b.lastCheckMu.Unlock()
+	b.lastCheck = t
+}
+
+func (b *Backend) ConsecutiveFailures() int {
+	b.lastCheckMu.RLock()
+	defer b.lastCheckMu.RUnlock()
+	return b.consecutiveFailures
+}
+
+func (b *Backend) IncrementFailures() {
+	b.lastCheckMu.Lock()
+	defer b.lastCheckMu.Unlock()
+	b.consecutiveFailures++
+}
+
+func (b *Backend) ResetFailures() {
+	b.lastCheckMu.Lock()
+	defer b.lastCheckMu.Unlock()
+	b.consecutiveFailures = 0
 }

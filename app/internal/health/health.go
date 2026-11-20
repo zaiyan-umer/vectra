@@ -16,6 +16,7 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 		Timeout: 2 * time.Second,
 	}
 
+	now := time.Now()
 	var wg sync.WaitGroup
 	wg.Add(len(backends))
 
@@ -24,9 +25,12 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 			defer wg.Done()
 			url := target.URL + "/health"
 
+			target.SetLastCheck(now)
+
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 			if err != nil {
 				target.SetHealthy(false)
+				target.IncrementFailures()
 				return
 			}
 
@@ -37,11 +41,13 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 
 			if err != nil || res == nil || res.StatusCode < 200 || res.StatusCode > 399 {
 				target.SetHealthy(false)
+				target.IncrementFailures()
 				log.Printf("HEALTH CHECK FAILED - %s\n", target.URL)
 				return
 			}
 
 			target.SetHealthy(true)
+			target.ResetFailures()
 			log.Printf("HEALTH CHECK - %s, Healthy: %t\n", target.URL, target.IsHealthy())
 		}(target)
 	}
@@ -78,4 +84,28 @@ func GetHealthyBackendIndices(backends []*backend.Backend) []int {
 	}
 
 	return indices
+}
+
+type BackendHealthStatus struct {
+	Index                int       `json:"index"`
+	URL                  string    `json:"url"`
+	Healthy              bool      `json:"healthy"`
+	LastCheck            time.Time `json:"lastCheck"`
+	ConsecutiveFailures  int       `json:"consecutiveFailures"`
+}
+
+func GetPoolHealth(backends []*backend.Backend) []BackendHealthStatus {
+	statuses := make([]BackendHealthStatus, 0, len(backends))
+
+	for index, target := range backends {
+		statuses = append(statuses, BackendHealthStatus{
+			Index:               index,
+			URL:                 target.URL,
+			Healthy:             target.IsHealthy(),
+			LastCheck:           target.LastCheck(),
+			ConsecutiveFailures: target.ConsecutiveFailures(),
+		})
+	}
+
+	return statuses
 }

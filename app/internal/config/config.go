@@ -8,8 +8,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const HealthCheckInterval time.Duration = 10 * time.Second
-
 var AdaptiveConfiguration = AdaptiveConfig{
     MaxExpectedConnections: 100,
     LatencyTarget:          500 * time.Millisecond,
@@ -60,12 +58,20 @@ func MustLoad() Config {
 		corsAllowedOrigins = []string{"http://localhost:5173"}
 	}
 
+	healthCheckInterval := 10 * time.Second
+	if v := os.Getenv("HEALTH_CHECK_INTERVAL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			healthCheckInterval = d
+		}
+	}
+
 	return Config{
-		Port: port,
-		DatabaseURL: db_url,
-		Algorithm: parsedAlgo,
-		TargetURLs: targetURLs,
-		CORSAllowedOrigins: corsAllowedOrigins,
+		Port:                 port,
+		DatabaseURL:          db_url,
+		Algorithm:            parsedAlgo,
+		TargetURLs:           targetURLs,
+		CORSAllowedOrigins:   corsAllowedOrigins,
+		HealthCheckInterval:  healthCheckInterval,
 	}
 }
 

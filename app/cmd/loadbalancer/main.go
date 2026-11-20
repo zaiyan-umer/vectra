@@ -42,7 +42,7 @@ func main() {
 	defer cancel()
 
 	go func() {
-		if err := health.Run(ctx, targetBackends, config.HealthCheckInterval); err != nil {
+		if err := health.Run(ctx, targetBackends, cfg.HealthCheckInterval); err != nil {
 			log.Printf("health checker stopped: %v", err)
 			cancel()
 		}
@@ -52,7 +52,23 @@ func main() {
 	benchmarkWorker := benchmark.NewWorker(benchmarkRepository, result)
 	go benchmarkWorker.Run(ctx)
 
-	metricsHandler := handlers.NewHandler(result, dbConnection)
+	metricsHandler := handlers.NewHandler(result, dbConnection, targetBackends)
+
+	result.StartCapture(5 * time.Second)
+
+	go func() {
+		ticker := time.NewTicker(cfg.HealthCheckInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				healthStatus := health.GetPoolHealth(targetBackends)
+				metricsHandler.UpdateHealthStatus(healthStatus)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
 	mux := http.NewServeMux()
 
@@ -60,6 +76,10 @@ func main() {
 	mux.HandleFunc("GET /benchmarks/{id}", metricsHandler.GetBenchmark)
 	mux.HandleFunc("GET /benchmarks/", metricsHandler.GetBenchmarks)
 	mux.HandleFunc("DELETE /benchmarks/{id}", metricsHandler.DeleteBenchmark)
+	mux.HandleFunc("GET /metrics", metricsHandler.GetMetrics)
+	mux.HandleFunc("GET /config", metricsHandler.GetConfig)
+	mux.HandleFunc("GET /backends", metricsHandler.GetBackends)
+	mux.HandleFunc("GET /backends/health", metricsHandler.GetBackendsHealth)
 	mux.Handle("/", proxy)
 
 	c := cors.New(cors.Options{
