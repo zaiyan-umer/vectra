@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,13 +66,37 @@ func MustLoad() Config {
 		}
 	}
 
+	metricsCaptureInterval := 2 * time.Second
+	if v := os.Getenv("METRICS_CAPTURE_INTERVAL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			metricsCaptureInterval = d
+		}
+	}
+
+	metricsMaxWindows := 180
+	if v := os.Getenv("METRICS_MAX_WINDOWS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 10 {
+			metricsMaxWindows = n
+		}
+	}
+
+	benchmarkWorkerPollInterval := 2 * time.Second
+	if v := os.Getenv("BENCHMARK_WORKER_POLL_INTERVAL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d >= 500*time.Millisecond && d <= 30*time.Second {
+			benchmarkWorkerPollInterval = d
+		}
+	}
+
 	return Config{
-		Port:                 port,
-		DatabaseURL:          db_url,
-		Algorithm:            parsedAlgo,
-		TargetURLs:           targetURLs,
-		CORSAllowedOrigins:   corsAllowedOrigins,
-		HealthCheckInterval:  healthCheckInterval,
+		Port:                       port,
+		DatabaseURL:                db_url,
+		Algorithm:                  parsedAlgo,
+		TargetURLs:                 targetURLs,
+		CORSAllowedOrigins:         corsAllowedOrigins,
+		HealthCheckInterval:        healthCheckInterval,
+		MetricsCaptureInterval:     metricsCaptureInterval,
+		MetricsMaxWindows:          metricsMaxWindows,
+		BenchmarkWorkerPollInterval: benchmarkWorkerPollInterval,
 	}
 }
 

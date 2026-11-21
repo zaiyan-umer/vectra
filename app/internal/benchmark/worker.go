@@ -13,19 +13,24 @@ import (
 )
 
 type Worker struct {
-	repository      *Repository
-	runtimeSnapshot *metrics.BenchmarkRuntimeSnapshot
+	repository                      *Repository
+	runtimeSnapshot                 *metrics.BenchmarkRuntimeSnapshot
+	benchmarkWorkerPollInterval     time.Duration
 }
 
-func NewWorker(repo *Repository, sh *metrics.BenchmarkRuntimeSnapshot) *Worker {
+func NewWorker(repo *Repository, sh *metrics.BenchmarkRuntimeSnapshot, pollInterval time.Duration) *Worker {
+	if pollInterval <= 0 {
+		pollInterval = 2 * time.Second
+	}
 	return &Worker{
-		repository:      repo,
-		runtimeSnapshot: sh,
+		repository:                     repo,
+		runtimeSnapshot:                sh,
+		benchmarkWorkerPollInterval:    pollInterval,
 	}
 }
 
 func (w *Worker) Run(ctx context.Context) {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(w.benchmarkWorkerPollInterval)
 	defer ticker.Stop()
 
 	for {
@@ -37,7 +42,6 @@ func (w *Worker) Run(ctx context.Context) {
 		case <-ticker.C:
 		}
 	}
-
 }
 
 func (w *Worker) processNext(ctx context.Context) {

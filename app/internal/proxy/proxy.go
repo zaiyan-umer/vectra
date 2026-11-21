@@ -92,7 +92,7 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend, bench
 		return nil, fmt.Errorf("backend selector must not be nil")
 	}
 
-	benchmarkResult, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends)
+	benchmarkResult, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends, 180)
 	if len(benchmarkResults) > 0 && benchmarkResults[0] != nil {
 		benchmarkResult = benchmarkResults[0]
 	}

@@ -23,7 +23,7 @@ func main() {
 
 	targetBackends := backend.Targets(cfg.TargetURLs)
 
-	result, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends)
+	result, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends, cfg.MetricsMaxWindows)
 	if err != nil {
 		log.Fatalf("main.metrics.NewBenchmarkRuntimeSnapshot: %v", err)
 	}
@@ -49,12 +49,12 @@ func main() {
 	}()
 
 	benchmarkRepository := benchmark.NewRepository(dbConnection)
-	benchmarkWorker := benchmark.NewWorker(benchmarkRepository, result)
+	benchmarkWorker := benchmark.NewWorker(benchmarkRepository, result, cfg.BenchmarkWorkerPollInterval)
 	go benchmarkWorker.Run(ctx)
 
 	metricsHandler := handlers.NewHandler(result, dbConnection, targetBackends)
 
-	result.StartCapture(5 * time.Second)
+	result.StartCapture(cfg.MetricsCaptureInterval)
 
 	go func() {
 		ticker := time.NewTicker(cfg.HealthCheckInterval)

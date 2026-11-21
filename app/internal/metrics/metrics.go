@@ -10,9 +10,7 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 )
 
-const (
-	maxTimeWindows = 60 // 5 min at 5s intervals
-)
+
 
 type BackendRuntimeCounters struct {
 	BackendIndex      int
@@ -28,10 +26,11 @@ type BenchmarkRuntimeSnapshot struct {
 	FinishedAt time.Time
 	Backends   []BackendRuntimeCounters
 
-	mu      sync.Mutex
-	buffer  []TimeWindow
-	cursor  int
-	first   bool
+	mu           sync.Mutex
+	buffer       []TimeWindow
+	cursor       int
+	first        bool
+	maxWindows   int
 }
 
 type BackendBenchmarkStats struct {
@@ -79,12 +78,16 @@ type BackendMetrics struct {
 	Errors           uint64  `json:"errors"`
 }
 
-func NewBenchmarkRuntimeSnapshot(backends []*backend.Backend) (*BenchmarkRuntimeSnapshot, error) {
+func NewBenchmarkRuntimeSnapshot(backends []*backend.Backend, maxWindows int) (*BenchmarkRuntimeSnapshot, error) {
+	if maxWindows < 10 {
+		maxWindows = 10
+	}
 	result := &BenchmarkRuntimeSnapshot{
-		StartedAt: time.Now(),
-		Backends:  make([]BackendRuntimeCounters, len(backends)),
-		buffer:    make([]TimeWindow, 0, maxTimeWindows),
-		first:     true,
+		StartedAt:  time.Now(),
+		Backends:   make([]BackendRuntimeCounters, len(backends)),
+		buffer:     make([]TimeWindow, 0, maxWindows),
+		first:      true,
+		maxWindows: maxWindows,
 	}
 
 	for index, target := range backends {
@@ -263,11 +266,11 @@ func (b *BenchmarkRuntimeSnapshot) addTimeWindow(stats []BackendBenchmarkStats, 
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if len(b.buffer) < maxTimeWindows {
+	if len(b.buffer) < b.maxWindows {
 		b.buffer = append(b.buffer, window)
 	} else {
 		b.buffer[b.cursor] = window
-		b.cursor = (b.cursor + 1) % maxTimeWindows
+		b.cursor = (b.cursor + 1) % b.maxWindows
 	}
 }
 

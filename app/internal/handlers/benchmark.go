@@ -187,11 +187,13 @@ func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 type ConfigResponse struct {
-	Algorithm                 string            `json:"algorithm"`
-	Targets                   []string          `json:"targets"`
-	HealthCheckIntervalSeconds int              `json:"healthCheckIntervalSeconds"`
-	AdaptiveConfig            config.AdaptiveConfig `json:"adaptiveConfig"`
-	AvailableAlgorithms       []string          `json:"availableAlgorithms"`
+	Algorithm                    string            `json:"algorithm"`
+	Targets                      []string          `json:"targets"`
+	HealthCheckIntervalSeconds   int               `json:"healthCheckIntervalSeconds"`
+	MetricsCaptureIntervalSeconds int              `json:"metricsCaptureIntervalSeconds"`
+	MetricsMaxWindows            int               `json:"metricsMaxWindows"`
+	AdaptiveConfig               config.AdaptiveConfig `json:"adaptiveConfig"`
+	AvailableAlgorithms          []string          `json:"availableAlgorithms"`
 }
 
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
@@ -199,11 +201,13 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ConfigResponse{
-		Algorithm:                  cfg.Algorithm,
-		Targets:                    cfg.TargetURLs,
-		HealthCheckIntervalSeconds: int(cfg.HealthCheckInterval.Seconds()),
-		AdaptiveConfig:             config.AdaptiveConfiguration,
-		AvailableAlgorithms:        config.AvailableAlgorithms,
+		Algorithm:                     cfg.Algorithm,
+		Targets:                       cfg.TargetURLs,
+		HealthCheckIntervalSeconds:    int(cfg.HealthCheckInterval.Seconds()),
+		MetricsCaptureIntervalSeconds: int(cfg.MetricsCaptureInterval.Seconds()),
+		MetricsMaxWindows:             cfg.MetricsMaxWindows,
+		AdaptiveConfig:                config.AdaptiveConfiguration,
+		AvailableAlgorithms:           config.AvailableAlgorithms,
 	})
 }
 
