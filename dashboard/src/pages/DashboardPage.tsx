@@ -11,7 +11,6 @@ import { useBackends } from "@/hooks/useBackends"
 import { usePoolHealth } from "@/hooks/usePoolHealth"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { Header } from "@/components/layout/Header"
-import { Footer } from "@/components/layout/Footer"
 import { AlgorithmSelector } from "@/components/benchmark/AlgorithmSelector"
 import { PoolHealthIndicator } from "@/components/benchmark/PoolHealthIndicator"
 import { NewBenchmarkTrigger } from "@/components/benchmark/NewBenchmarkTrigger"
@@ -181,7 +180,6 @@ export function DashboardPage() {
           </div>
         </section>
       </main>
-      <Footer />
       <BenchmarkModal
         isOpen={isOpen}
         onClose={close}
