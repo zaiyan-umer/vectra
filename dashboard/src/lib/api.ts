@@ -25,7 +25,9 @@ const STATUS_MAP: Record<ApiBenchmarkStatus, BenchmarkRun['status']> = {
 const ALGORITHM_MAP: Record<ApiAlgorithm, BenchmarkRun['algorithm']> = {
   adaptive_selection: 'adaptive',
   round_robin: 'round_robin',
-  least_conn: 'least_conn',
+  healthy_round_robin: 'healthy_round_robin',
+  least_connections: 'least_conn',
+  latency_aware: 'latency_aware',
   weighted: 'weighted',
 };
 

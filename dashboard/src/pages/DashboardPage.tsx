@@ -94,7 +94,7 @@ export function DashboardPage() {
   })
 
   const algorithmCounts = useMemo(() => {
-    const counts: Record<Algorithm | "all", number> = { all: runsData.length, adaptive: 0, round_robin: 0, least_conn: 0, weighted: 0 }
+    const counts: Record<Algorithm | "all", number> = { all: runsData.length, adaptive: 0, round_robin: 0, least_conn: 0, weighted: 0, healthy_round_robin: 0, latency_aware: 0 }
     runsData.forEach((r) => { counts[r.algorithm]++ })
     return counts
   }, [runsData])

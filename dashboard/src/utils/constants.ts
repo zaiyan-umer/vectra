@@ -5,6 +5,8 @@ export const ALGORITHMS: { value: Algorithm; label: string; short: string }[] = 
   { value: "round_robin", label: "Round Robin", short: "Round Robin" },
   { value: "least_conn", label: "Least Connections", short: "Least Conn" },
   { value: "weighted", label: "Weighted Response", short: "Weighted" },
+  { value: "healthy_round_robin", label: "Healthy Round Robin", short: "Healthy RR" },
+  { value: "latency_aware", label: "Latency Aware", short: "Latency" },
 ];
 
 export const ALGORITHM_LABELS: Record<Algorithm, string> = {
@@ -12,12 +14,16 @@ export const ALGORITHM_LABELS: Record<Algorithm, string> = {
   round_robin: "Round Robin",
   least_conn: "Least Conn",
   weighted: "Weighted",
+  healthy_round_robin: "Healthy Round Robin",
+  latency_aware: "Latency Aware",
 };
 
 export const API_ALGORITHM_LABELS: Record<string, string> = {
   adaptive_selection: "Adaptive Selection",
   round_robin: "Round Robin",
-  least_conn: "Least Connections",
+  healthy_round_robin: "Healthy Round Robin",
+  least_connections: "Least Connections",
+  latency_aware: "Latency Aware",
   weighted: "Weighted Response",
 };
 

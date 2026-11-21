@@ -10,7 +10,7 @@ export interface ApiBenchmarkCreateResponse {
 
 export type ApiBenchmarkStatus = 'queued' | 'running' | 'completed' | 'failed' | 'canceled';
 
-export type ApiAlgorithm = 'adaptive_selection' | 'round_robin' | 'least_conn' | 'weighted';
+export type ApiAlgorithm = 'adaptive_selection' | 'round_robin' | 'healthy_round_robin' | 'least_connections' | 'latency_aware' | 'weighted';
 
 export interface ApiAutocannonLatency {
   mean: number;

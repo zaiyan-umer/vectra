@@ -1,4 +1,4 @@
-export type Algorithm = "adaptive" | "round_robin" | "least_conn" | "weighted";
+export type Algorithm = "adaptive" | "round_robin" | "least_conn" | "weighted" | "healthy_round_robin" | "latency_aware";
 
 export type RunStatus = "running" | "completed" | "failed" | "canceled";
 
