@@ -105,9 +105,9 @@ export function DashboardPage() {
 
     if (!pool || !sparkline) {
       return [
-        { id: "throughput", label: "Throughput", value: "—", unit: "req/s", sparklineData: [], sparklineColor: CHART_COLORS.primary, footerLeft: "Live", footerRight: "5s" },
-        { id: "latency", label: "Avg Latency", value: "—", unit: "ms", sparklineData: [], sparklineColor: CHART_COLORS.healthy, footerLeft: "Live", footerRight: "5s" },
-        { id: "errors", label: "Error Rate", value: "—", unit: "%", sparklineData: [], sparklineColor: CHART_COLORS.critical, footerLeft: "Live", footerRight: "5s" },
+        { id: "throughput", label: "Throughput", value: "\u2014", unit: "req/s", sparklineData: [], sparklineColor: CHART_COLORS.primary, footerLeft: "Live", footerRight: "5s" },
+        { id: "latency", label: "Avg Latency", value: "\u2014", unit: "ms", sparklineData: [], sparklineColor: CHART_COLORS.healthy, footerLeft: "Live", footerRight: "5s" },
+        { id: "errors", label: "Error Rate", value: "\u2014", unit: "%", sparklineData: [], sparklineColor: CHART_COLORS.critical, footerLeft: "Live", footerRight: "5s" },
       ]
     }
 
@@ -126,9 +126,19 @@ export function DashboardPage() {
   const poolTotal = healthData?.totalCount ?? 0
   const poolLastCheck = healthData?.backends?.[0]?.lastCheck
     ? formatRelativeTime(healthData.backends[0].lastCheck)
-    : "—"
+    : "\u2014"
 
   const currentAlgorithm = config?.algorithm ?? "adaptive"
+
+  const isSystemConfigLoading = config === undefined || healthData === undefined
+
+  const systemConfig = {
+    algorithm: config?.algorithm ?? "adaptive_selection",
+    targets: config?.targets ?? [],
+    healthyCount: healthData?.healthyCount ?? 0,
+    totalCount: healthData?.totalCount ?? 0,
+    isLoading: isSystemConfigLoading,
+  }
 
   return (
     <MainLayout>
@@ -184,6 +194,7 @@ export function DashboardPage() {
         isOpen={isOpen}
         onClose={close}
         onStart={handleStartBenchmark}
+        systemConfig={systemConfig}
       />
     </MainLayout>
   )
