@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, AlertCircle, ExternalLink } from "lucide-react"
+import { AlertCircle, ExternalLink } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ConfigHighlights } from "./ConfigHighlights"
 import { AutocannonSummary } from "./AutocannonSummary"
 import { LatencyPercentiles } from "./LatencyPercentiles"
@@ -17,7 +18,7 @@ const STATUS_BADGE_VARIANT: Record<RunStatus, "default" | "secondary" | "destruc
   running: "secondary",
   failed: "destructive",
   canceled: "outline",
-};
+}
 
 interface DetailDrawerProps {
   run?: BenchmarkRun
@@ -53,15 +54,36 @@ export function DetailDrawer({ run, isOpen, isMobile, isLoading = false, classNa
           ? "fixed inset-y-0 right-0 w-full max-w-md z-50 animate-slide-in"
           : "xl:col-span-7"
       )}>
-        <div className="flex items-center justify-between px-space-md py-space-sm border-b border-border/50">
-          <div className="flex items-center gap-space-sm">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="font-code-sm text-on-surface">Loading...</span>
+        <div className="bg-primary/5 px-space-md py-space-md border-b border-border/50">
+          <div className="flex items-center justify-between flex-wrap gap-space-md">
+            <div className="flex items-center gap-space-sm flex-wrap">
+              <Skeleton className="h-5 w-32" />
+            </div>
+            <div className="flex items-center gap-space-md flex-wrap">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+            </div>
           </div>
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+
+        <ScrollArea className="flex-1">
+          <div className="p-space-md space-y-space-lg">
+            <Skeleton className="h-16 w-full" />
+            <Separator />
+            <Skeleton className="grid grid-cols-3 gap-4" style={{height: '80px'}} />
+            <Separator />
+            <Skeleton className="h-20 w-full" />
+            <Separator />
+            <Skeleton className="h-16 w-full" />
+            <Separator />
+            <Skeleton className="h-16 w-full" />
+            <Separator />
+            <Skeleton className="h-1 w-full bg-border/50" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </ScrollArea>
       </aside>
     )
   }
