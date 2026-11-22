@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/rs/cors"
@@ -21,21 +22,31 @@ import (
 func main() {
 	cfg := config.MustLoad()
 
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelInfo,
+	})
+	logger := slog.New(jsonHandler)
+	slog.SetDefault(logger)
+
 	targetBackends := backend.Targets(cfg.TargetURLs)
 
 	result, err := metrics.NewBenchmarkRuntimeSnapshot(targetBackends, cfg.MetricsMaxWindows)
 	if err != nil {
-		log.Fatalf("main.metrics.NewBenchmarkRuntimeSnapshot: %v", err)
+		slog.Error("failed to initialize benchmark runtime metrics", "err", err)
+		os.Exit(1)
 	}
 
 	proxy, err := selector.New(cfg.Algorithm, targetBackends, result)
 	if err != nil {
-		log.Fatalf("main.selector.New: %v", err)
+		slog.Error("failed to initialize load-balancer selector", "algorithm", cfg.Algorithm, "err", err)
+		os.Exit(1)
 	}
 
 	dbConnection, err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("main.db.Connect: %v", err)
+		slog.Error("failed to connect to database", "err", err)
+		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -43,7 +54,7 @@ func main() {
 
 	go func() {
 		if err := health.Run(ctx, targetBackends, cfg.HealthCheckInterval); err != nil {
-			log.Printf("health checker stopped: %v", err)
+			slog.Error("health checker stopped", "interval", cfg.HealthCheckInterval, "err", err)
 			cancel()
 		}
 	}()
@@ -100,10 +111,11 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	log.Printf("server is listening on %s", httpServer.Addr)
+	slog.Info("server is listening", "address", httpServer.Addr)
 
 	err = httpServer.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("server failed: %v", err)
+		slog.Error("server failed", "address", httpServer.Addr, "err", err)
+		os.Exit(1)
 	}
 }

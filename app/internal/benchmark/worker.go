@@ -3,8 +3,7 @@ package benchmark
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log"
+	"log/slog"
 	"os/exec"
 	"strconv"
 	"time"
@@ -50,7 +49,7 @@ func (w *Worker) processNext(ctx context.Context) {
 		return
 	}
 	if err != nil {
-		fmt.Printf("worker could not claim the job: %v", err)
+		slog.Error("worker could not claim the job", "job_id", job.ID, "err", err)
 		return
 	}
 
@@ -76,9 +75,9 @@ func (w *Worker) execute(ctx context.Context, job *BenchmarkJob) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		log.Printf("exec.CommandContext: %v", err)
+		slog.Error("error on cmd.output", "job_id", job.ID, "err", err)
 		if err := w.repository.FailJob(ctx, job.ID, err.Error()); err != nil {
-			log.Printf("fail benchmark %q: %v", job.ID, err)
+			slog.Error("benchmark failed", "job_id", job.ID, "err", err)
 		}
 		return
 	}
@@ -88,23 +87,23 @@ func (w *Worker) execute(ctx context.Context, job *BenchmarkJob) {
 
 	var autocannonResult json.RawMessage
 	if err := json.Unmarshal(output, &autocannonResult); err != nil {
-		log.Printf("json.unmarshal: %v", err)
+		slog.Error("error on json.unmarshal", "job_id", job.ID, "err", err)
 		if err := w.repository.FailJob(ctx, job.ID, err.Error()); err != nil {
-			log.Printf("fail benchmark %q: %v", job.ID, err)
+			slog.Error("benchmark failed", "job_id", job.ID, "err", err)
 		}
 		return
 	}
 
 	routingJSON, err := json.Marshal(report)
 	if err != nil {
-		log.Printf("json.marshal routing: %v", err)
+		slog.Error("error on json.marshal routing", "job_id", job.ID, "err", err)
 		if err := w.repository.FailJob(ctx, job.ID, err.Error()); err != nil {
-			log.Printf("fail benchmark %q: %v", job.ID, err)
+			slog.Error("benchmark failed", "job_id", job.ID, "err", err)
 		}
 		return
 	}
 
 	if err := w.repository.CompleteJob(ctx, job.ID, autocannonResult, routingJSON); err != nil {
-		log.Printf("complete benchmark %q: %v", job.ID, err)
+		slog.Info("benchmark completed", "job_id", job.ID)
 	}
 }

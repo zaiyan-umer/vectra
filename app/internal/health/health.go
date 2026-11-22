@@ -3,7 +3,7 @@ package health
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -31,6 +31,7 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 			if err != nil {
 				target.SetHealthy(false)
 				target.IncrementFailures()
+				slog.Error("health check request creation failed", "backend_url", target.URL, "url", url, "err", err)
 				return
 			}
 
@@ -42,13 +43,17 @@ func HealthCheck(ctx context.Context, backends []*backend.Backend) {
 			if err != nil || res == nil || res.StatusCode < 200 || res.StatusCode > 399 {
 				target.SetHealthy(false)
 				target.IncrementFailures()
-				log.Printf("HEALTH CHECK FAILED - %s\n", target.URL)
+				statusCode := 0
+				if res != nil {
+					statusCode = res.StatusCode
+				}
+				slog.Error("health check failed", "backend_url", target.URL, "url", url, "status_code", statusCode, "err", err)
 				return
 			}
 
 			target.SetHealthy(true)
 			target.ResetFailures()
-			log.Printf("HEALTH CHECK - %s, Healthy: %t\n", target.URL, target.IsHealthy())
+			slog.Info("health check completed", "backend_url", target.URL, "url", url, "status_code", res.StatusCode, "healthy", true)
 		}(target)
 	}
 	wg.Wait()
@@ -87,11 +92,11 @@ func GetHealthyBackendIndices(backends []*backend.Backend) []int {
 }
 
 type BackendHealthStatus struct {
-	Index                int       `json:"index"`
-	URL                  string    `json:"url"`
-	Healthy              bool      `json:"healthy"`
-	LastCheck            time.Time `json:"lastCheck"`
-	ConsecutiveFailures  int       `json:"consecutiveFailures"`
+	Index               int       `json:"index"`
+	URL                 string    `json:"url"`
+	Healthy             bool      `json:"healthy"`
+	LastCheck           time.Time `json:"lastCheck"`
+	ConsecutiveFailures int       `json:"consecutiveFailures"`
 }
 
 func GetPoolHealth(backends []*backend.Backend) []BackendHealthStatus {
