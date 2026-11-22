@@ -9,7 +9,7 @@ interface AlgorithmSelectorProps {
   className?: string
 }
 
-export function AlgorithmSelector({ algorithm = "adaptive", className }: AlgorithmSelectorProps) {
+export function AlgorithmSelector({ algorithm = "adaptive_selection", className }: AlgorithmSelectorProps) {
   return (
     <TooltipProvider>
       <Tooltip>

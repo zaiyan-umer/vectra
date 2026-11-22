@@ -4,7 +4,6 @@ import type {
   ApiBenchmarkCreateResponse,
   ApiBenchmarkDetail,
   ApiBenchmarkStatus,
-  ApiAlgorithm,
   ApiAutocannonResult,
   ApiSuccessResponse,
   MetricsResponse,
@@ -22,15 +21,6 @@ const STATUS_MAP: Record<ApiBenchmarkStatus, BenchmarkRun['status']> = {
   completed: 'completed',
   failed: 'failed',
   canceled: 'canceled',
-};
-
-const ALGORITHM_MAP: Record<ApiAlgorithm, BenchmarkRun['algorithm']> = {
-  adaptive_selection: 'adaptive',
-  round_robin: 'round_robin',
-  healthy_round_robin: 'healthy_round_robin',
-  least_connections: 'least_conn',
-  latency_aware: 'latency_aware',
-  weighted: 'weighted',
 };
 
 function getNumericValue(value: number | { count: number } | undefined): number {
@@ -61,7 +51,7 @@ function transformBenchmark(api: ApiBenchmarkDetail): BenchmarkRun {
     id: api.id,
     timestamp: api.startedAt ?? api.createdAt,
     status: STATUS_MAP[api.status],
-    algorithm: ALGORITHM_MAP[api.algorithm] ?? 'adaptive',
+    algorithm: api.algorithm as BenchmarkRun['algorithm'],
     durationSeconds: api.durationSeconds,
     connections: api.connections,
     throughput: autocannon?.requests?.mean ?? 0,
@@ -150,4 +140,4 @@ export async function getBackendsHealth(): Promise<HealthResponse> {
   return fetchJson<HealthResponse>('/backends/health');
 }
 
-export { transformBenchmark, STATUS_MAP, ALGORITHM_MAP };
+export { transformBenchmark, STATUS_MAP };

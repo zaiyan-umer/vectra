@@ -1,21 +1,14 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import type { Algorithm } from "@/types/benchmark"
+import { API_ALGORITHM_LABELS } from "@/utils/constants"
 
 interface AlgorithmTabsProps {
-  activeTab: Algorithm | "all"
-  onTabChange: (tab: Algorithm | "all") => void
-  counts?: Record<Algorithm | "all", number>
+  activeTab: string | "all"
+  onTabChange: (tab: string | "all") => void
+  availableAlgorithms: string[]
+  counts?: Record<string, number>
   className?: string
 }
-
-const TABS: { id: Algorithm | "all"; label: string }[] = [
-  { id: "all", label: "All Runs" },
-  { id: "adaptive", label: "Adaptive" },
-  { id: "round_robin", label: "Round Robin" },
-  { id: "least_conn", label: "Least Conn" },
-  { id: "weighted", label: "Weighted" },
-]
 
 function CountBadge({ count, isActive }: { count: number; isActive: boolean }) {
   return (
@@ -30,10 +23,18 @@ function CountBadge({ count, isActive }: { count: number; isActive: boolean }) {
   )
 }
 
-export function AlgorithmTabs({ activeTab, onTabChange, counts, className }: AlgorithmTabsProps) {
+export function AlgorithmTabs({ activeTab, onTabChange, availableAlgorithms, counts, className }: AlgorithmTabsProps) {
+  const tabs = [
+    { id: "all", label: "All Runs" },
+    ...availableAlgorithms.map((algo) => ({
+      id: algo,
+      label: API_ALGORITHM_LABELS[algo] ?? algo,
+    })),
+  ]
+
   return (
     <div className={cn("flex flex-wrap gap-1.5", className)} role="tablist">
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         return (
           <Button

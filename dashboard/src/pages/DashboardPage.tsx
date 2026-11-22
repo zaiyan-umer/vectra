@@ -20,7 +20,6 @@ import { AlgorithmTabs } from "@/components/benchmark/AlgorithmTabs"
 import { RunsTable } from "@/components/benchmark/RunsTable"
 import { DetailDrawer } from "@/components/benchmark/DetailDrawer"
 import { BenchmarkModal } from "@/components/modal/BenchmarkModal"
-import type { Algorithm } from "@/types/benchmark"
 import type { BackendDetail } from "@/types/api"
 import { formatRPS, formatLatency, formatErrorRate, formatRelativeTime } from "@/utils/format"
 import { CHART_COLORS } from "@/utils/constants"
@@ -28,7 +27,7 @@ import { toast } from "sonner"
 
 export function DashboardPage() {
   const [selectedRunId, setSelectedRunId] = useState<string | undefined>(undefined)
-  const [activeAlgorithm, setActiveAlgorithm] = useState<Algorithm | "all">("all")
+  const [activeAlgorithm, setActiveAlgorithm] = useState<string | "all">("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [startedRunId, setStartedRunId] = useState<string | undefined>(undefined)
 
@@ -63,7 +62,7 @@ export function DashboardPage() {
     setCurrentPage(1)
   }
 
-  const handleAlgorithmChange = (algo: Algorithm | "all") => {
+  const handleAlgorithmChange = (algo: string | "all") => {
     setActiveAlgorithm(algo)
     setCurrentPage(1)
   }
@@ -93,11 +92,14 @@ export function DashboardPage() {
     onCloseDrawer: () => setSelectedRunId(undefined),
   })
 
+  const availableAlgorithms = config?.availableAlgorithms ?? []
+
   const algorithmCounts = useMemo(() => {
-    const counts: Record<Algorithm | "all", number> = { all: runsData.length, adaptive: 0, round_robin: 0, least_conn: 0, weighted: 0, healthy_round_robin: 0, latency_aware: 0 }
-    runsData.forEach((r) => { counts[r.algorithm]++ })
+    const counts: Record<string, number> = { all: runsData.length }
+    availableAlgorithms.forEach((algo) => { counts[algo] = 0 })
+    runsData.forEach((r) => { if (counts[r.algorithm] !== undefined) counts[r.algorithm]++ })
     return counts
-  }, [runsData])
+  }, [runsData, availableAlgorithms])
 
   const metricCards = useMemo(() => {
     const pool = metrics?.pool
@@ -128,12 +130,12 @@ export function DashboardPage() {
     ? formatRelativeTime(healthData.backends[0].lastCheck)
     : "\u2014"
 
-  const currentAlgorithm = config?.algorithm ?? "adaptive"
+  const currentAlgorithm = config?.algorithm ?? "adaptive_selection"
 
   const isSystemConfigLoading = config === undefined || healthData === undefined
 
   const systemConfig = {
-    algorithm: config?.algorithm ?? "adaptive_selection",
+    algorithm: currentAlgorithm,
     targets: config?.targets ?? [],
     healthyCount: healthData?.healthyCount ?? 0,
     totalCount: healthData?.totalCount ?? 0,
@@ -167,6 +169,7 @@ export function DashboardPage() {
               <AlgorithmTabs
                 activeTab={activeAlgorithm}
                 onTabChange={handleAlgorithmChange}
+                availableAlgorithms={availableAlgorithms}
                 counts={algorithmCounts}
               />
             </div>

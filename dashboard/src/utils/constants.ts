@@ -1,19 +1,17 @@
 import type { Algorithm, RunStatus } from "@/types/benchmark";
 
 export const ALGORITHMS: { value: Algorithm; label: string; short: string }[] = [
-  { value: "adaptive", label: "Adaptive Selection", short: "Adaptive" },
+  { value: "adaptive_selection", label: "Adaptive Selection", short: "Adaptive" },
   { value: "round_robin", label: "Round Robin", short: "Round Robin" },
-  { value: "least_conn", label: "Least Connections", short: "Least Conn" },
-  { value: "weighted", label: "Weighted Response", short: "Weighted" },
+  { value: "least_connections", label: "Least Connections", short: "Least Conn" },
   { value: "healthy_round_robin", label: "Healthy Round Robin", short: "Healthy RR" },
   { value: "latency_aware", label: "Latency Aware", short: "Latency" },
 ];
 
 export const ALGORITHM_LABELS: Record<Algorithm, string> = {
-  adaptive: "Adaptive",
+  adaptive_selection: "Adaptive Selection",
   round_robin: "Round Robin",
-  least_conn: "Least Conn",
-  weighted: "Weighted",
+  least_connections: "Least Connections",
   healthy_round_robin: "Healthy Round Robin",
   latency_aware: "Latency Aware",
 };
@@ -24,7 +22,6 @@ export const API_ALGORITHM_LABELS: Record<string, string> = {
   healthy_round_robin: "Healthy Round Robin",
   least_connections: "Least Connections",
   latency_aware: "Latency Aware",
-  weighted: "Weighted Response",
 };
 
 export const STATUS_LABELS: Record<RunStatus, string> = {
