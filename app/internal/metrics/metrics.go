@@ -10,8 +10,6 @@ import (
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 )
 
-
-
 type BackendRuntimeCounters struct {
 	BackendIndex      int
 	URL               string
@@ -34,48 +32,13 @@ type BenchmarkRuntimeSnapshot struct {
 }
 
 type BackendBenchmarkStats struct {
-	BackendIndex      int     `json:"index"`
-	URL               string  `json:"url"`
-	SelectedRequests  uint64  `json:"assignedRequests"`
-	CompletedRequests uint64  `json:"completedRequests"`
-	Errors            uint64  `json:"errors"`
-	AverageLatencyMs  float64 `json:"averageLatencyMs"`
-	TrafficShare      float64 `json:"trafficShare"`
-}
-
-type TimeWindow struct {
-	Timestamp          time.Time  `json:"timestamp"`
-	PoolRPS            float64    `json:"poolRps"`
-	PoolErrorRate      float64    `json:"poolErrorRate"`
-	PoolAvgLatencyMs   float64    `json:"poolAvgLatencyMs"`
-	Backends           []BackendWindow `json:"backends"`
-}
-
-type BackendWindow struct {
-	Index           int     `json:"index"`
-	RPS             float64 `json:"rps"`
-	ErrorRate       float64 `json:"errorRate"`
-	AvgLatencyMs    float64 `json:"avgLatencyMs"`
-}
-
-type PoolMetrics struct {
-	RPS           float64 `json:"rps"`
-	ErrorRate     float64 `json:"errorRate"`
-	AvgLatencyMs  float64 `json:"avgLatencyMs"`
-}
-
-type BackendMetrics struct {
-	Index            int     `json:"index"`
-	URL              string  `json:"url"`
-	Healthy          bool    `json:"healthy"`
-	ActiveConnections int64  `json:"activeConnections"`
-	RPS              float64 `json:"rps"`
-	ErrorRate        float64 `json:"errorRate"`
-	AvgLatencyMs     float64 `json:"avgLatencyMs"`
-	TrafficShare     float64 `json:"trafficShare"`
-	SelectedRequests  uint64  `json:"selectedRequests"`
-	CompletedRequests uint64  `json:"completedRequests"`
-	Errors           uint64  `json:"errors"`
+	BackendIndex      int
+	URL               string
+	SelectedRequests  uint64
+	CompletedRequests uint64
+	Errors            uint64
+	AverageLatencyMs  float64
+	TrafficShare      float64
 }
 
 func NewBenchmarkRuntimeSnapshot(backends []*backend.Backend, maxWindows int) (*BenchmarkRuntimeSnapshot, error) {

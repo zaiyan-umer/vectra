@@ -10,6 +10,7 @@ import (
 	benchmarkpkg "github.com/zaiyan-umer/vectra/app/internal/benchmark"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
 	"github.com/zaiyan-umer/vectra/app/internal/health"
+	"github.com/zaiyan-umer/vectra/app/internal/httpx"
 	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 )
 
@@ -41,17 +42,17 @@ func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
 
 	if err := decoder.Decode(&request); err != nil {
 		slog.Error("invalid benchmark request", "req", request, "err", err)
-		http.Error(w, "invalid benchmark request: "+err.Error(), http.StatusBadRequest)
+		httpx.WriteError(w, http.StatusBadRequest, "invalid benchmark request: "+err.Error(), httpx.ErrCodeInvalidJSON)
 		return
 	}
 	if request.DurationSeconds <= 0 || request.DurationSeconds > 120 {
 		slog.Error("invalid benchmark request", "req", request, "reason", "durationSeconds must be between 1 and 120")
-		http.Error(w, "durationSeconds must be between 1 and 120", http.StatusBadRequest)
+		httpx.WriteError(w, http.StatusBadRequest, "durationSeconds must be between 1 and 120", httpx.ErrCodeValidationFailed)
 		return
 	}
 	if request.Connections <= 0 || request.Connections > 1000 {
 		slog.Error("invalid benchmark request", "req", request, "reason", "connections must be between 1 and 1000")
-		http.Error(w, "connections must be between 1 and 1000", http.StatusBadRequest)
+		httpx.WriteError(w, http.StatusBadRequest, "connections must be between 1 and 1000", httpx.ErrCodeValidationFailed)
 		return
 	}
 
@@ -60,20 +61,19 @@ func (h *Handler) StartBenchmark(w http.ResponseWriter, r *http.Request) {
 	benchmarkID, err := h.repository.CreateBenchmark(request, targetURL)
 	if err != nil {
 		slog.Error("failed to create benchmark", "req", request, "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.WriteError(w, http.StatusInternalServerError, "internal server error", httpx.ErrCodeInternalError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-
-	err = json.NewEncoder(w).Encode(BenchmarkStartResponse{
+	response := BenchmarkStartResponse{
 		ID:     benchmarkID,
 		Status: "queued",
-	})
+	}
+
+	err = httpx.WriteJson(w, http.StatusAccepted, response)
 	if err != nil {
-		slog.Error("failed to encode benchmark start response", "req", request, "benchmark_id", benchmarkID, "err", err)
-		http.Error(w, "failed to encode benchmark", http.StatusInternalServerError)
+		slog.Error("failed to encode benchmark start response", "benchmark_id", benchmarkID, "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode benchmark", httpx.ErrCodeInternalError)
 	}
 }
 
@@ -81,13 +81,14 @@ func (h *Handler) GetBenchmarks(w http.ResponseWriter, r *http.Request) {
 	benchmarks, err := h.repository.GetBenchmarks()
 	if err != nil {
 		slog.Error("error while searching benchmarks", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.WriteError(w, http.StatusInternalServerError, "internal server error", httpx.ErrCodeInternalError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(benchmarks); err != nil {
+	err = httpx.WriteJson(w, http.StatusOK, benchmarks)
+	if err != nil {
 		slog.Error("failed to encode benchmarks response", "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode benchmarks", httpx.ErrCodeInternalError)
 	}
 }
 
@@ -96,18 +97,19 @@ func (h *Handler) GetBenchmark(w http.ResponseWriter, r *http.Request) {
 
 	benchmark, err := h.repository.GetBenchmark(id)
 	if err == sql.ErrNoRows {
-		http.Error(w, "benchmark not found", http.StatusNotFound)
+		httpx.WriteError(w, http.StatusNotFound, "benchmark not found", httpx.ErrCodeNotFound)
 		return
 	}
 	if err != nil {
 		slog.Error("failed to get benchmark", "benchmark_id", id, "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.WriteError(w, http.StatusInternalServerError, "internal server error", httpx.ErrCodeInternalError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(benchmark); err != nil {
-		slog.Error("failed to encode benchmark response", "benchmark_id", id, "err", err)
+	err = httpx.WriteJson(w, http.StatusOK, benchmark)
+	if err != nil {
+		slog.Error("failed to encode benchmark response", "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode benchmark", httpx.ErrCodeInternalError)
 	}
 }
 
@@ -117,35 +119,16 @@ func (h *Handler) DeleteBenchmark(w http.ResponseWriter, r *http.Request) {
 	deleted, err := h.repository.DeleteBenchmark(id)
 	if err != nil {
 		slog.Error("failed to delete benchmark", "benchmark_id", id, "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		httpx.WriteError(w, http.StatusInternalServerError, "internal server error", httpx.ErrCodeInternalError)
 		return
 	}
 
 	if !deleted {
-		http.Error(w, "benchmark not found", http.StatusNotFound)
+		httpx.WriteError(w, http.StatusNotFound, "benchmark not found", httpx.ErrCodeNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-type MetricsResponse struct {
-	Pool      metrics.PoolMetrics      `json:"pool"`
-	Backends  []metrics.BackendMetrics `json:"backends"`
-	Sparkline SparklineData            `json:"sparkline"`
-}
-
-type SparklineData struct {
-	Timestamps       []string                    `json:"timestamps"`
-	PoolRPS          []float64                   `json:"poolRps"`
-	PoolErrorRate    []float64                   `json:"poolErrorRate"`
-	PoolAvgLatencyMs []float64                   `json:"poolAvgLatencyMs"`
-	Backends         map[string]BackendSparkline `json:"backends"`
-}
-
-type BackendSparkline struct {
-	RPS          []float64 `json:"rps"`
-	AvgLatencyMs []float64 `json:"avgLatencyMs"`
 }
 
 func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) {
@@ -182,31 +165,23 @@ func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(MetricsResponse{
+	metrics := MetricsResponse{
 		Pool:      pool,
 		Backends:  backends,
 		Sparkline: sparkline,
-	}); err != nil {
-		slog.Error("failed to encode metrics response", "err", err)
 	}
-}
 
-type ConfigResponse struct {
-	Algorithm                     string                `json:"algorithm"`
-	Targets                       []string              `json:"targets"`
-	HealthCheckIntervalSeconds    int                   `json:"healthCheckIntervalSeconds"`
-	MetricsCaptureIntervalSeconds int                   `json:"metricsCaptureIntervalSeconds"`
-	MetricsMaxWindows             int                   `json:"metricsMaxWindows"`
-	AdaptiveConfig                config.AdaptiveConfig `json:"adaptiveConfig"`
-	AvailableAlgorithms           []string              `json:"availableAlgorithms"`
+	err := httpx.WriteJson(w, http.StatusOK, metrics)
+	if err != nil {
+		slog.Error("failed to encode metrics response", "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode metrics response", httpx.ErrCodeInternalError)
+	}
 }
 
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	cfg := config.MustLoad()
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(ConfigResponse{
+	response := ConfigResponse{
 		Algorithm:                     cfg.Algorithm,
 		Targets:                       cfg.TargetURLs,
 		HealthCheckIntervalSeconds:    int(cfg.HealthCheckInterval.Seconds()),
@@ -214,27 +189,12 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 		MetricsMaxWindows:             cfg.MetricsMaxWindows,
 		AdaptiveConfig:                config.AdaptiveConfiguration,
 		AvailableAlgorithms:           config.AvailableAlgorithms,
-	}); err != nil {
-		slog.Error("failed to encode config response", "err", err)
 	}
-}
 
-type BackendsResponse struct {
-	Backends []BackendDetail `json:"backends"`
-}
-
-type BackendDetail struct {
-	Index             int     `json:"index"`
-	URL               string  `json:"url"`
-	Healthy           bool    `json:"healthy"`
-	ActiveConnections int64   `json:"activeConnections"`
-	RPS               float64 `json:"rps"`
-	ErrorRate         float64 `json:"errorRate"`
-	AvgLatencyMs      float64 `json:"avgLatencyMs"`
-	TrafficShare      float64 `json:"trafficShare"`
-	SelectedRequests  uint64  `json:"selectedRequests"`
-	CompletedRequests uint64  `json:"completedRequests"`
-	Errors            uint64  `json:"errors"`
+	if err := httpx.WriteJson(w, http.StatusOK, response); err != nil {
+		slog.Error("failed to encode config response", "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode config response", httpx.ErrCodeInternalError)
+	}
 }
 
 func (h *Handler) GetBackends(w http.ResponseWriter, r *http.Request) {
@@ -257,16 +217,11 @@ func (h *Handler) GetBackends(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(BackendsResponse{Backends: details}); err != nil {
+	response := BackendsResponse{Backends: details}
+	if err := httpx.WriteJson(w, http.StatusOK, response); err != nil {
 		slog.Error("failed to encode backends response", "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode backends response", httpx.ErrCodeInternalError)
 	}
-}
-
-type HealthResponse struct {
-	HealthyCount int                          `json:"healthyCount"`
-	TotalCount   int                          `json:"totalCount"`
-	Backends     []health.BackendHealthStatus `json:"backends"`
 }
 
 func (h *Handler) GetBackendsHealth(w http.ResponseWriter, r *http.Request) {
@@ -277,12 +232,14 @@ func (h *Handler) GetBackendsHealth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(HealthResponse{
+	response := HealthResponse{
 		HealthyCount: healthyCount,
 		TotalCount:   len(h.health),
 		Backends:     h.health,
-	}); err != nil {
+	}
+
+	if err := httpx.WriteJson(w, http.StatusOK, response); err != nil {
 		slog.Error("failed to encode health response", "err", err)
+		httpx.WriteError(w, http.StatusInternalServerError, "failed to encode health response", httpx.ErrCodeInternalError)
 	}
 }

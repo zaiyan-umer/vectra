@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/zaiyan-umer/vectra/app/internal/backend"
 	"github.com/zaiyan-umer/vectra/app/internal/config"
+	"github.com/zaiyan-umer/vectra/app/internal/httpx"
 	"github.com/zaiyan-umer/vectra/app/internal/metrics"
 )
 
@@ -43,8 +44,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if index < 0 || index >= len(p.proxies) {
-		log.Printf("invalid backend index: %d", index)
-		http.Error(w, "no backend is available", http.StatusServiceUnavailable)
+		slog.Error("no backend available", "backend_index", index, "backend_count", len(p.proxies))
+		httpx.WriteError(w, http.StatusServiceUnavailable, "no backend is available", httpx.ErrCodeUnavailable)
 		return
 	}
 
@@ -77,13 +78,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	log.Printf(
-		"benchmark backend=%d selected=%d completed=%d errors=%d average_latency=%s",
-		index+1,
-		backendMetrics.SelectedRequests.Load(),
-		completed,
-		backendMetrics.Errors.Load(),
-		averageLatency,
+	slog.Info("proxy request completed",
+		"backend_index", index,
+		"selected_requests", backendMetrics.SelectedRequests.Load(),
+		"completed_requests", completed,
+		"errors", backendMetrics.Errors.Load(),
+		"average_latency", averageLatency,
 	)
 }
 
@@ -132,7 +132,7 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend, bench
 				p.benchmarkResults.RecordError(backendIndex)
 			}
 
-			handleUnhealthyBackendResponse(w, r, err, rawTarget)
+			handleUnhealthyBackendResponse(w, r, err, backendIndex, rawTarget)
 		}
 
 		p.proxies = append(p.proxies, reverseProxy)
@@ -141,13 +141,25 @@ func NewProxy(selector BackendSelector, targetBackends []*backend.Backend, bench
 	return p, nil
 }
 
-func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, rawTarget *backend.Backend) {
+func handleUnhealthyBackendResponse(w http.ResponseWriter, r *http.Request, err error, backendIndex int, rawTarget *backend.Backend) {
 	if errors.Is(err, context.Canceled) {
-		log.Printf("request canceled for backend %s: %v", rawTarget.URL, err)
+		slog.Info("proxy request canceled",
+			"backend_index", backendIndex,
+			"backend_url", rawTarget.URL,
+			"method", r.Method,
+			"path", r.URL.Path,
+			"err", err,
+		)
 		return
 	}
 
 	rawTarget.SetHealthy(false)
-	log.Printf("backend %s failed: %v", rawTarget.URL, err)
-	http.Error(w, "backend unavailable", http.StatusBadGateway)
+	slog.Error("backend unavailable",
+		"backend_index", backendIndex,
+		"backend_url", rawTarget.URL,
+		"method", r.Method,
+		"path", r.URL.Path,
+		"err", err,
+	)
+	httpx.WriteError(w, http.StatusBadGateway, "backend unavailable", httpx.ErrCodeBadGateway)
 }
