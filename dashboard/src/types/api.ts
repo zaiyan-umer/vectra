@@ -3,6 +3,19 @@ export interface ApiBenchmarkCreateRequest {
   connections: number;
 }
 
+export interface ApiSuccessResponse<T> {
+  data: T;
+}
+
+export interface ApiErrorPayload {
+  code: string;
+  message: string;
+}
+
+export interface ApiErrorResponse {
+  error: ApiErrorPayload;
+}
+
 export interface ApiBenchmarkCreateResponse {
   id: string;
   status: 'queued';
@@ -53,12 +66,22 @@ export interface ApiAutocannonResult {
 }
 
 export interface ApiRoutingEntry {
-  backend: string;
-  port: number;
-  assignedRequests: number;
-  trafficShare: number;
-  averageLatencyMs: number;
-  url: string;
+  backendIndex?: number;
+  url?: string;
+  selectedRequests?: number;
+  completedRequests?: number;
+  errors?: number;
+  averageLatencyMs?: number;
+  trafficShare?: number;
+  URL?: string;
+  BackendIndex?: number;
+  SelectedRequests?: number;
+  CompletedRequests?: number;
+  Errors?: number;
+  AverageLatencyMs?: number;
+  TrafficShare?: number;
+  index?: number;
+  assignedRequests?: number;
 }
 
 export interface ApiBenchmarkDetail {

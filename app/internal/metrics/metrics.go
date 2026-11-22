@@ -32,13 +32,13 @@ type BenchmarkRuntimeSnapshot struct {
 }
 
 type BackendBenchmarkStats struct {
-	BackendIndex      int
-	URL               string
-	SelectedRequests  uint64
-	CompletedRequests uint64
-	Errors            uint64
-	AverageLatencyMs  float64
-	TrafficShare      float64
+	BackendIndex      int     `json:"backendIndex"`
+	URL               string  `json:"url"`
+	SelectedRequests  uint64  `json:"selectedRequests"`
+	CompletedRequests uint64  `json:"completedRequests"`
+	Errors            uint64  `json:"errors"`
+	AverageLatencyMs  float64 `json:"averageLatencyMs"`
+	TrafficShare      float64 `json:"trafficShare"`
 }
 
 func NewBenchmarkRuntimeSnapshot(backends []*backend.Backend, maxWindows int) (*BenchmarkRuntimeSnapshot, error) {

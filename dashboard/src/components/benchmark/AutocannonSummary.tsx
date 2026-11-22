@@ -1,4 +1,4 @@
-import { formatNumber, formatLatency, formatThroughput } from "@/utils/format"
+import { formatNumber, formatLatency, formatRPS } from "@/utils/format"
 import type { BenchmarkRun } from "@/types/benchmark"
 
 interface AutocannonSummaryProps {
@@ -13,8 +13,8 @@ export function AutocannonSummary({ run }: AutocannonSummaryProps) {
         <p className="font-code-sm text-on-surface">{formatNumber(run.totalRequests)}</p>
       </div>
       <div className="flex-1 space-y-1">
-        <p className="font-label-caps text-on-surface-variant">Throughput</p>
-        <p className="font-code-sm text-on-surface">{formatThroughput(run.throughput)} req/s</p>
+        <p className="font-label-caps text-on-surface-variant">Request Rate</p>
+        <p className="font-code-sm text-on-surface">{formatRPS(run.throughput)} req/s</p>
       </div>
       <div className="flex-1 space-y-1">
         <p className="font-label-caps text-on-surface-variant">HTTP Time/Sec</p>

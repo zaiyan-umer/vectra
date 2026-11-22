@@ -1,10 +1,12 @@
 import type {
+  ApiErrorResponse,
   ApiBenchmarkCreateRequest,
   ApiBenchmarkCreateResponse,
   ApiBenchmarkDetail,
   ApiBenchmarkStatus,
   ApiAlgorithm,
   ApiAutocannonResult,
+  ApiSuccessResponse,
   MetricsResponse,
   ConfigResponse,
   BackendsResponse,
@@ -62,7 +64,7 @@ function transformBenchmark(api: ApiBenchmarkDetail): BenchmarkRun {
     algorithm: ALGORITHM_MAP[api.algorithm] ?? 'adaptive',
     durationSeconds: api.durationSeconds,
     connections: api.connections,
-    throughput: autocannon?.throughput?.mean ?? 0,
+    throughput: autocannon?.requests?.mean ?? 0,
     avgLatency: autocannon?.latency?.mean ?? 0,
     p99: autocannon?.latency?.p99 ?? 0,
     errors: (autocannon?.errors ?? 0) + (autocannon?.non2xx ?? 0),
@@ -71,7 +73,7 @@ function transformBenchmark(api: ApiBenchmarkDetail): BenchmarkRun {
       : 0,
     totalRequests: autocannon?.requests?.total ?? 0,
     dataTransferredBytes: 0,
-    httpPerSecond: autocannon?.throughput?.mean ?? 0,
+    httpPerSecond: autocannon?.requests?.mean ?? 0,
     latencyPercentiles: {
       p50: autocannon?.latency?.p50 ?? 0,
       p75: autocannon?.latency?.p75 ?? 0,
@@ -86,9 +88,9 @@ function transformBenchmark(api: ApiBenchmarkDetail): BenchmarkRun {
       timeouts: autocannon?.timeouts ?? 0,
     },
     backendAllocation: routing.map((r) => ({
-      url: r.url,
-      requests: r.assignedRequests,
-      percent: r.trafficShare,
+      url: r.url ?? r.URL ?? '',
+      requests: r.selectedRequests ?? r.SelectedRequests ?? r.assignedRequests ?? 0,
+      percent: r.trafficShare ?? r.TrafficShare ?? 0,
     })),
     targetUrl: api.targetUrl,
     createdAt: api.createdAt,
@@ -103,17 +105,22 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message ?? `HTTP ${res.status}`);
+    const err = await res.json().catch(() => null) as ApiErrorResponse | null;
+    throw new Error(err?.error.message ?? res.statusText ?? `HTTP ${res.status}`);
   }
 
-  return res.json();
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  const payload = await res.json() as ApiSuccessResponse<T>;
+  return payload.data;
 }
 
 export async function postBenchmark(
   config: ApiBenchmarkCreateRequest
 ): Promise<ApiBenchmarkCreateResponse> {
-  return fetchJson<ApiBenchmarkCreateResponse>('/benchmarks', {
+  return fetchJson<ApiBenchmarkCreateResponse>('/benchmarks/', {
     method: 'POST',
     body: JSON.stringify(config),
   });
@@ -124,7 +131,7 @@ export async function getBenchmark(id: string): Promise<ApiBenchmarkDetail> {
 }
 
 export async function getBenchmarks(): Promise<ApiBenchmarkDetail[]> {
-  return fetchJson<ApiBenchmarkDetail[]>('/benchmarks');
+  return fetchJson<ApiBenchmarkDetail[]>('/benchmarks/');
 }
 
 export async function getMetrics(): Promise<MetricsResponse> {

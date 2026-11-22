@@ -1,4 +1,4 @@
-export function formatNumber(value: number, decimals = 0): string {
+  export function formatNumber(value: number, decimals = 0): string {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -44,7 +44,8 @@ export function formatTimestamp(iso: string): string {
 }
 
 export function formatPercent(value: number, decimals = 2): string {
-  return `${value.toFixed(decimals)}%`;
+  const safeValue = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return `${safeValue.toFixed(decimals)}%`;
 }
 
 export function formatLatency(ms: number): string {
@@ -57,11 +58,6 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-export function formatThroughput(rps: number): string {
-  if (rps >= 1000) return `${(rps / 1000).toFixed(1)}k`;
-  return rps.toFixed(1);
 }
 
 export function formatRPS(rps: number): string {
