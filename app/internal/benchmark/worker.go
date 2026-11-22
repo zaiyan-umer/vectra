@@ -59,7 +59,8 @@ func (w *Worker) processNext(ctx context.Context) {
 func (w *Worker) execute(ctx context.Context, job *BenchmarkJob) {
 	before := w.runtimeSnapshot.CaptureSnapshot()
 
-	bechmarkCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	timeout := time.Duration(job.DurationSeconds+30) * time.Second
+	bechmarkCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(
