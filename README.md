@@ -1,41 +1,47 @@
 # Vectra
 
-Vectra is an HTTP reverse proxy that distributes requests across configured
-backend servers using round-robin selection.
+A Go HTTP load balancer with 5 routing algorithms, health checking, autocannon benchmarking, and a React dashboard.
 
-## Current status
+## Features
 
-The application currently supports:
+- **5 routing algorithms**: round_robin, healthy_round_robin, least_connections, latency_aware, adaptive_selection
+- **Health checks** with configurable intervals
+- **Autocannon benchmarking** with per-backend traffic distribution
+- **Real-time dashboard** (React + TypeScript + Vite) showing RPS, latency, error rate, backend allocation
+- **PostgreSQL** for benchmark history
 
-- Round-robin backend selection
-- HTTP and HTTPS backend URLs
-- Reverse-proxy forwarding
-- `503 Service Unavailable` when no selected backend exists
-- A Dockerized test backend with health, delay, and error endpoints
+## Quick Start
 
-Health-aware routing, configuration files, graceful shutdown, and adaptive
-selection are planned next.
+```bash
+# 1. Start test backends (3 servers on 8081-8083)
+make testserver
 
-## Run locally
+# 2. Configure environment
+cp app/.env.example app/.env
+# Edit app/.env with your DATABASE_URL
 
-Start the load balancer from the `app` directory:
+# 3. Run database migrations
+make migrate-up
 
-```sh
-go run ./cmd/loadbalancer
+# 4. Start load balancer on :8080
+make run
+
+# 5. Start dashboard on :5173
+cd dashboard && cp .env.example .env && bun install && bun run dev
 ```
 
-It listens on `:8080` and forwards to `localhost:8081`, `localhost:8082`,
-and `localhost:8083`. Start the test backends separately with:
+## Algorithms
 
-```sh
-cd test-server
-docker compose up --build
-```
+- `round_robin` — Sequential distribution across all backends
+- `healthy_round_robin` — Round robin skipping unhealthy backends
+- `least_connections` — Route to backend with fewest active connections
+- `latency_aware` — Prefer backends with lower latency
+- `adaptive_selection` — Combines health, latency, and connection count
 
-## Test
+## Benchmarking
 
-```sh
-cd app
-go test ./...
-go test -race ./...
-```
+Open the dashboard → "New Benchmark" → set duration (10-120s) and connections (1-1000). Results show request rate, latency percentiles, status codes, and per-backend traffic distribution.
+
+## Configuration
+
+See `app/.env.example` and `dashboard/.env.example` for all options.
